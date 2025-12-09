@@ -40,13 +40,13 @@
         "content": "Confused supposition is a kind of personal supposition in which a common term stands for many individuals at once in such a way that you cannot simply isolate one bearer and preserve the truth conditions. Here the term\u2019s reference is \u201cspread out\u201d over its whole extension: the proposition is true only if what is said holds of all the relevant things, or at least in a way that cannot be captured by singling out one instance. This kind of supposition is typically triggered by universal signs like \u201cevery,\u201d which force the term to range across its entire (or at least a broad) field of application."
     },
     "b10": {
-        "latin": "mobilis et distributiva",
-        "english": "movable plus distributive",
+        "latin": "Mobilis et distributiva",
+        "english": "Movable plus distributive",
         "content": "Movable and distributive supposition is the subtype of confused supposition in which the common term stands for each of its many bearers conjunctively, in a way that licenses \u201cdescent\u201d to any particular you choose while preserving truth. When supposition is movable and distributive, a universally quantified statement commits you to every individual in the class, so that from the general claim you can infer a whole series of singular instances. The \u201cmovable\u201d label signals that you can move from the universal to these particulars; \u201cdistributive\u201d signals that the property in question is distributed across them."
     },
     "b11": {
         "latin": "Immobilis",
-        "english": "immovable",
+        "english": "Immovable",
         "content": "Immovable supposition, also called merely confused supposition, is the contrasting subtype in which a common term still stands for all the individuals in its extension, but only disjunctively, so that descent to particular instances does not preserve the original truth conditions. The proposition treats the term\u2019s many bearers as an undivided totality or range, and carving out one of them on its own can distort the logical shape of what is being asserted. In such cases, the term\u2019s supposition is \u201cconfused\u201d because it ranges over many, but \u201cimmovable\u201d because you cannot safely move from the general statement to parallel singular ones."
     }
 }
