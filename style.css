@@ -272,14 +272,14 @@ button:hover {
     box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
 }
 
-#simplified-tree-container {
+.tree-view-container {
     width: 100%;
     height: 100%;
     position: relative;
 }
 
-#simplifiedLinesCanvas,
-#simplifiedNodesLayer {
+.tree-lines-canvas,
+.tree-nodes-layer {
     position: absolute;
     top: 0;
     left: 0;
@@ -287,11 +287,11 @@ button:hover {
     height: 100%;
 }
 
-#simplifiedLinesCanvas {
+.tree-lines-canvas {
     z-index: 0;
 }
 
-#simplifiedNodesLayer {
+.tree-nodes-layer {
     z-index: 1;
 }
 

@@ -9,12 +9,38 @@ const gridContainer = document.getElementById('grid-container');
 const alphaContent = document.getElementById('alphaContent');
 const sectionAlphaTitle = document.getElementById('section-alpha-title');
 const leafList = document.getElementById('leafList');
-const simplifiedTreeContainer = document.getElementById('simplified-tree-container');
-const simplifiedNodesLayer = document.getElementById('simplifiedNodesLayer');
-const simplifiedLinesCanvas = document.getElementById('simplifiedLinesCanvas');
 const zoomToggleContainer = document.getElementById('zoomToggleContainer');
 const zoomToggleBtn = document.getElementById('zoomToggleBtn');
 const TREE_IMAGE_SRC = 'images/circle_crop_tree.png';
+
+const treeViewConfigs = {
+    simplified: {
+        containerId: 'simplified-tree-container',
+        nodesLayerId: 'simplifiedNodesLayer',
+        linesCanvasId: 'simplifiedLinesCanvas',
+        labelResolver: (data) => data.latin
+    },
+    english: {
+        containerId: 'english-tree-container',
+        nodesLayerId: 'englishNodesLayer',
+        linesCanvasId: 'englishLinesCanvas',
+        labelResolver: (data) => data.english
+    }
+};
+
+const treeViews = Object.entries(treeViewConfigs).reduce((acc, [key, config]) => {
+    acc[key] = {
+        key,
+        container: document.getElementById(config.containerId),
+        nodesLayer: document.getElementById(config.nodesLayerId),
+        linesCanvas: document.getElementById(config.linesCanvasId),
+        labelResolver: config.labelResolver,
+        nodeMap: {},
+        connectionsDirty: false,
+        frameScheduled: false
+    };
+    return acc;
+}, {});
 
 const gridSize = 30;
 const grid = [];
@@ -117,16 +143,13 @@ const DEFAULT_SIMPLIFIED_CONNECTIONS = [
 ];
 
 const nodePositionOverrides = {
-    b10: { topOffset: 12, leftOffset: 4 },
+    b10: { topOffset: 16, leftOffset: 4 },
     b11: { topOffset: -4, leftOffset: 0 }
 };
 
 const clampPercentage = (value) => Math.max(0, Math.min(100, value));
 
 let simplifiedConnections = [...DEFAULT_SIMPLIFIED_CONNECTIONS];
-let simplifiedNodeMap = {};
-let simplifiedConnectionsDirty = false;
-let simplifiedConnectionsFrameScheduled = false;
 
 const sanitizeName = (name) => {
     return name
@@ -211,7 +234,7 @@ function updateSimplifiedConnectionsFromText(connectionText) {
     } else {
         simplifiedConnections = [...DEFAULT_SIMPLIFIED_CONNECTIONS];
     }
-    markSimplifiedConnectionsDirty();
+    markAllConnectionsDirty();
 }
 
 function applyPositionOverrides(id, baseX, baseY) {
@@ -222,45 +245,71 @@ function applyPositionOverrides(id, baseX, baseY) {
     };
 }
 
-function markSimplifiedConnectionsDirty() {
-    simplifiedConnectionsDirty = true;
-    requestSimplifiedConnectionDraw();
-}
+const getRenderableTerms = () => {
+    return Object.keys(contentDatabase).map(id => {
+        const data = contentDatabase[id];
+        const location = termLocations[id];
+        if (data && location) {
+            const [row, col] = location;
+            const x = (col / gridSize) * 100;
+            const y = (row / gridSize) * 100;
+            return { id, data, x, y };
+        }
+        return null;
+    }).filter(Boolean);
+};
 
-function requestSimplifiedConnectionDraw() {
-    if (!simplifiedLinesCanvas || simplifiedConnectionsFrameScheduled || !simplifiedConnectionsDirty) {
+const getTreeView = (viewKey) => treeViews[viewKey];
+
+function markConnectionsDirty(viewKey) {
+    const view = getTreeView(viewKey);
+    if (!view || !view.linesCanvas) {
         return;
     }
-    simplifiedConnectionsFrameScheduled = true;
+    view.connectionsDirty = true;
+    requestConnectionDraw(viewKey);
+}
+
+function markAllConnectionsDirty() {
+    Object.keys(treeViews).forEach(markConnectionsDirty);
+}
+
+function requestConnectionDraw(viewKey) {
+    const view = getTreeView(viewKey);
+    if (!view || view.frameScheduled || !view.connectionsDirty || !view.linesCanvas) {
+        return;
+    }
+    view.frameScheduled = true;
     requestAnimationFrame(() => {
-        simplifiedConnectionsFrameScheduled = false;
-        drawSimplifiedConnections();
+        view.frameScheduled = false;
+        drawConnections(viewKey);
     });
 }
 
-function drawSimplifiedConnections() {
-    if (!simplifiedLinesCanvas || !simplifiedTreeContainer || !simplifiedConnectionsDirty) {
+function drawConnections(viewKey) {
+    const view = getTreeView(viewKey);
+    if (!view || !view.linesCanvas || !view.container || !view.connectionsDirty) {
         return;
     }
 
-    const containerRect = simplifiedTreeContainer.getBoundingClientRect();
+    const containerRect = view.container.getBoundingClientRect();
     if (!containerRect.width || !containerRect.height) {
         return;
     }
 
-    simplifiedConnectionsDirty = false;
-    simplifiedLinesCanvas.width = containerRect.width;
-    simplifiedLinesCanvas.height = containerRect.height;
+    view.connectionsDirty = false;
+    view.linesCanvas.width = containerRect.width;
+    view.linesCanvas.height = containerRect.height;
 
-    const ctx = simplifiedLinesCanvas.getContext('2d');
-    ctx.clearRect(0, 0, simplifiedLinesCanvas.width, simplifiedLinesCanvas.height);
+    const ctx = view.linesCanvas.getContext('2d');
+    ctx.clearRect(0, 0, view.linesCanvas.width, view.linesCanvas.height);
     ctx.strokeStyle = '#ffd700';
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
 
     simplifiedConnections.forEach(connection => {
-        const fromNode = simplifiedNodeMap[connection.from];
-        const toNode = simplifiedNodeMap[connection.to];
+        const fromNode = view.nodeMap[connection.from];
+        const toNode = view.nodeMap[connection.to];
         if (!fromNode || !toNode) {
             return;
         }
@@ -280,37 +329,31 @@ function drawSimplifiedConnections() {
     });
 }
 
-function buildSimplifiedTree() {
-    if (!simplifiedTreeContainer || !simplifiedNodesLayer) {
+function buildTreeViewNodes(viewKey) {
+    const view = getTreeView(viewKey);
+    if (!view || !view.container || !view.nodesLayer) {
         return;
     }
 
-    simplifiedNodesLayer.innerHTML = '';
-    simplifiedNodeMap = {};
+    view.nodesLayer.innerHTML = '';
+    view.nodeMap = {};
 
-    const terms = Object.keys(contentDatabase).map(id => {
-        const data = contentDatabase[id];
-        const location = termLocations[id];
-        if (location) {
-            const [row, col] = location;
-            const x = (col / gridSize) * 100;
-            const y = (row / gridSize) * 100;
-            return { id, data, x, y };
-        }
-        return null;
-    }).filter(Boolean);
+    const terms = getRenderableTerms();
 
     terms.forEach(term => {
         const node = document.createElement('div');
         node.classList.add('tree-node');
-        node.textContent = term.data.latin;
+        const label = typeof view.labelResolver === 'function'
+            ? view.labelResolver(term.data, term.id)
+            : term.data.latin;
+        node.textContent = label || term.data.latin;
 
         const { left, top } = applyPositionOverrides(term.id, term.x, term.y);
         node.style.left = `${left}%`;
         node.style.top = `${top}%`;
 
-        simplifiedNodesLayer.appendChild(node);
-        simplifiedNodeMap[term.id] = node;
+        view.nodesLayer.appendChild(node);
+        view.nodeMap[term.id] = node;
 
         node.addEventListener('mouseover', () => {
             alphaContent.textContent = term.data.content;
@@ -318,17 +361,20 @@ function buildSimplifiedTree() {
         });
     });
 
-    if (currentSparkleNodeId && simplifiedNodeMap[currentSparkleNodeId]) {
-        if (currentView === 1) {
-            simplifiedNodeMap[currentSparkleNodeId].classList.add('sparkle');
-        } else {
+    if (viewKey === 'simplified') {
+        if (currentSparkleNodeId && view.nodeMap[currentSparkleNodeId] && currentView === 1) {
+            view.nodeMap[currentSparkleNodeId].classList.add('sparkle');
+        } else if (currentSparkleNodeId && currentView !== 1) {
             currentSparkleNodeId = null;
         }
-    } else {
-        currentSparkleNodeId = null;
     }
 
-    markSimplifiedConnectionsDirty();
+    markConnectionsDirty(viewKey);
+}
+
+function buildAllTreeViews() {
+    buildTreeViewNodes('simplified');
+    buildTreeViewNodes('english');
 }
 
 Promise.all([
@@ -340,7 +386,7 @@ Promise.all([
     termLocations = coords;
     populateLeafList();
     updateSimplifiedConnectionsFromText(connectionText);
-    buildSimplifiedTree();
+    buildAllTreeViews();
 });
 
 // View navigation
@@ -351,10 +397,14 @@ function setSimplifiedNodeHighlight(termId) {
     if (currentView !== 1 || !termId) {
         return;
     }
+    const simplifiedView = getTreeView('simplified');
+    if (!simplifiedView) {
+        return;
+    }
     if (currentSparkleNodeId === termId) {
         return;
     }
-    const node = simplifiedNodeMap[termId];
+    const node = simplifiedView.nodeMap[termId];
     if (!node) {
         clearSimplifiedNodeHighlight();
         return;
@@ -368,7 +418,8 @@ function clearSimplifiedNodeHighlight() {
     if (!currentSparkleNodeId) {
         return;
     }
-    const node = simplifiedNodeMap[currentSparkleNodeId];
+    const simplifiedView = getTreeView('simplified');
+    const node = simplifiedView ? simplifiedView.nodeMap[currentSparkleNodeId] : null;
     if (node) {
         node.classList.remove('sparkle');
     }
@@ -433,9 +484,13 @@ function updateView() {
     }
 
     if (currentView === 1) {
-        requestSimplifiedConnectionDraw();
+        requestConnectionDraw('simplified');
     } else {
         clearSimplifiedNodeHighlight();
+    }
+
+    if (currentView === 2) {
+        requestConnectionDraw('english');
     }
 }
 
@@ -456,10 +511,12 @@ backBtn.addEventListener('click', () => {
 });
 
 window.addEventListener('resize', () => {
-    if (!simplifiedTreeContainer || !Object.keys(simplifiedNodeMap).length) {
-        return;
-    }
-    markSimplifiedConnectionsDirty();
+    Object.keys(treeViews).forEach(viewKey => {
+        const view = getTreeView(viewKey);
+        if (view && view.container && Object.keys(view.nodeMap).length) {
+            markConnectionsDirty(viewKey);
+        }
+    });
 });
 
 updateView();
