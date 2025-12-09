@@ -79,7 +79,7 @@ treeImage.onload = function() {
 
 // Set the image source - using a placeholder for now
 // You'll need to upload your image and replace this URL
-treeImage.src = 'circle_crop_tree.jpg';
+treeImage.src = 'circle_crop_tree.png';
 
 // Populate selection list
 function populateLeafList() {
