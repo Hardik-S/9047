@@ -98,10 +98,8 @@ function buildSimplifiedTree() {
         { id: 'b6', top: '50%', left: '35%' },
         { id: 'b7', top: '50%', left: '55%' },
         { id: 'b8', top: '50%', left: '75%' },
-        { id: 'b9', top: '30%', left: '65%' },
         { id: 'b10', top: '30%', left: '85%' },
-        { id: 'b11', top: '30%', left: '5%' },
-        { id: 'b12', top: '10%', left: '45%' }
+        { id: 'b11', top: '30%', left: '5%' }
     ];
 
     const connections = [
@@ -112,10 +110,8 @@ function buildSimplifiedTree() {
         { from: 'b2', to: 'b6' },
         { from: 'b4', to: 'b7' },
         { from: 'b4', to: 'b8' },
-        { from: 'b8', to: 'b9' },
         { from: 'b8', to: 'b10' },
-        { from: 'b3', to: 'b11' },
-        { from: 'b11', to: 'b12' }
+        { from: 'b3', to: 'b11' }
     ];
 
     terms.forEach(term => {
