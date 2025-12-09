@@ -93,12 +93,14 @@ function buildSimplifiedTree() {
     simplifiedTreeSvg.innerHTML = '';
 
     const terms = Object.keys(contentDatabase).map(id => {
+        const data = contentDatabase[id];
         const location = termLocations[id];
         if (location) {
             const [row, col] = location;
-            const top = (row / gridSize) * 100 + '%';
-            const left = (col / gridSize) * 100 + '%';
-            return { id, top, left };
+            // Calculate position based on grid coordinates
+            const x = (col / gridSize) * 100;
+            const y = (row / gridSize) * 100;
+            return { id, data, x, y, element: null };
         }
         return null;
     }).filter(Boolean);
@@ -115,36 +117,38 @@ function buildSimplifiedTree() {
         { from: 'b3', to: 'b11' }
     ];
 
+    // Create nodes
     terms.forEach(term => {
-        const data = contentDatabase[term.id];
-        if (data) {
-            const node = document.createElement('div');
-            node.classList.add('tree-node');
-            node.textContent = data.latin;
-            node.style.position = 'absolute';
-            node.style.top = term.top;
-            node.style.left = term.left;
-            simplifiedTreeContainer.appendChild(node);
-            term.element = node;
+        const node = document.createElement('div');
+        node.classList.add('tree-node');
+        node.textContent = term.data.latin;
+        node.style.position = 'absolute';
+        // Flip Y-axis for root at bottom
+        node.style.left = `${term.x}%`;
+        node.style.top = `${100 - term.y}%`; // Initial flip
+        simplifiedTreeContainer.appendChild(node);
+        term.element = node;
 
-            node.addEventListener('mouseover', () => {
-                const data = contentDatabase[term.id];
-                alphaContent.textContent = data.content;
-                sectionAlphaTitle.textContent = `${data.english} | ${data.latin}`;
-            });
-        }
+        node.addEventListener('mouseover', () => {
+            alphaContent.textContent = term.data.content;
+            sectionAlphaTitle.textContent = `${term.data.english} | ${term.data.latin}`;
+        });
     });
 
-    // Adjust positions for flipping the tree (root at bottom)
-    const containerHeight = simplifiedTreeContainer.offsetHeight;
+    // Adjust node positions after rendering to account for element size
     terms.forEach(term => {
         if (term.element) {
-            const currentTop = parseFloat(term.top);
-            const newTop = 100 - currentTop - (term.element.offsetHeight / containerHeight * 100);
-            term.element.style.top = newTop + '%';
+            const nodeWidth = term.element.offsetWidth;
+            const nodeHeight = term.element.offsetHeight;
+            // Center the node based on its size
+            term.element.style.left = `calc(${term.x}% - ${nodeWidth / 2}px)`;
+            // Adjust top for flipped tree: 100% - (original_y% + node_height_percentage)
+            term.element.style.top = `calc(${100 - term.y}% - ${nodeHeight}px)`; // Adjust for height to place bottom at original y
         }
     });
 
+
+    // Draw connections
     connections.forEach(connection => {
         const fromTerm = terms.find(t => t.id === connection.from);
         const toTerm = terms.find(t => t.id === connection.to);
@@ -154,6 +158,7 @@ function buildSimplifiedTree() {
             const toRect = toTerm.element.getBoundingClientRect();
             const containerRect = simplifiedTreeContainer.getBoundingClientRect();
 
+            // Calculate center points relative to the simplifiedTreeContainer
             const x1 = fromRect.left + fromRect.width / 2 - containerRect.left;
             const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
             const x2 = toRect.left + toRect.width / 2 - containerRect.left;
@@ -164,8 +169,8 @@ function buildSimplifiedTree() {
             line.setAttribute('y1', y1);
             line.setAttribute('x2', x2);
             line.setAttribute('y2', y2);
-            line.setAttribute('stroke', '#ffd700');
-            line.setAttribute('stroke-width', '1');
+            line.setAttribute('stroke', '#ffd700'); // Gold color
+            line.setAttribute('stroke-width', '1'); // Thin line
             simplifiedTreeSvg.appendChild(line);
         }
     });
