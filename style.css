@@ -172,11 +172,12 @@ button:hover {
 .leaf-list li {
     padding: 10px 12px;
     margin: 8px 0;
-    background-color: #0d1b2e;
+    background-color: #1a2942; /* Deep blue */
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s;
     border: 1px solid #2d4a7c;
+    text-align: center;
 }
 
 .leaf-list li:hover {
