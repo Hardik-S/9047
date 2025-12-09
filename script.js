@@ -67,7 +67,7 @@ const contentDatabase = {
     'b14': {
         latin: 'Naturalis',
         english: 'Natural',
-        content: 'Natural supposition is the default way a common term stands for the things it is naturally suited to signify, without any special restriction or extra device. When a term has natural supposition, it ranges over all the individuals that fall under its ordinary signification, and it can do so across times: past, present, and future. This is the “maximal” extension of the term, driven purely by what it means, not by extra temporal or modal operators. Natural supposition therefore describes how a bare common term would stand for its kind if nothing else in the sentence narrowed its reach.'
+        content: 'Natural supposition is the default way a common term stands for the things it is naturally suited to signify, without any special restriction or extra device. When a term has natural supposition, it ranges over all the individuals that fall under its ordinary signification, and it can do so across times: past, present, and future. This is the “maximal” extension of the term, driven purely by what it means, not by extra temporal and modal operators. Natural supposition therefore describes how a bare common term would stand for its kind if nothing else in the sentence narrowed its reach.'
     },
     'b15': {
         latin: 'Consuetudinaria',
@@ -83,31 +83,69 @@ const contentDatabase = {
 
 const canvas = document.getElementById('treeCanvas');
 const ctx = canvas.getContext('2d');
-const interactiveCanvas = document.getElementById('interactiveCanvas');
-const iCtx = interactiveCanvas.getContext('2d');
+const gridContainer = document.getElementById('grid-container');
 const alphaContent = document.getElementById('alphaContent');
 const leafList = document.getElementById('leafList');
 
-const interactiveAreas = [
-    { x: 250, y: 50, width: 100, height: 30, contentId: 'b1' },
-    { x: 150, y: 150, width: 100, height: 30, contentId: 'b2' },
-    { x: 250, y: 150, width: 100, height: 30, contentId: 'b3' },
-    { x: 350, y: 150, width: 100, height: 30, contentId: 'b4' },
-    { x: 100, y: 250, width: 100, height: 30, contentId: 'b5' },
-    { x: 200, y: 250, width: 100, height: 30, contentId: 'b6' },
-    { x: 300, y: 250, width: 100, height: 30, contentId: 'b7' },
-    { x: 400, y: 250, width: 100, height: 30, contentId: 'b8' },
-    { x: 350, y: 350, width: 100, height: 30, contentId: 'b9' },
-    { x: 450, y: 350, width: 100, height: 30, contentId: 'b10' },
-    { x: 50, y: 350, width: 100, height: 30, contentId: 'b11' },
-    { x: 250, y: 450, width: 100, height: 30, contentId: 'b12' },
-    { x: 150, y: 550, width: 100, height: 30, contentId: 'b13' },
-    { x: 250, y: 550, width: 100, height: 30, contentId: 'b14' },
-    { x: 350, y: 550, width: 100, height: 30, contentId: 'b15' },
-    { x: 450, y: 550, width: 100, height: 30, contentId: 'b16' }
-];
+const gridSize = 20;
+const grid = [];
+const termLocations = {
+    'b1': [10, 8],
+    'b2': [6, 4],
+    'b3': [10, 4],
+    'b4': [14, 4],
+    'b5': [4, 12],
+    'b6': [8, 12],
+    'b7': [12, 12],
+    'b8': [16, 12],
+    'b9': [14, 16],
+    'b10': [18, 16],
+    'b11': [2, 16],
+    'b12': [10, 18],
+    'b13': [6, 2],
+    'b14': [10, 2],
+    'b15': [14, 2],
+    'b16': [18, 2]
+};
 
-let selectedArea = null;
+for (let i = 0; i < gridSize * gridSize; i++) {
+    const cell = document.createElement('div');
+    cell.classList.add('grid-cell');
+    cell.dataset.index = i;
+    gridContainer.appendChild(cell);
+    grid.push(cell);
+}
+
+function highlightTerm(termId) {
+    const location = termLocations[termId];
+    if (location) {
+        const [row, col] = location;
+        const index1 = row * gridSize + col;
+        const index2 = row * gridSize + col + 1;
+        grid[index1].classList.add('highlight');
+        grid[index2].classList.add('highlight');
+    }
+}
+
+function clearHighlights() {
+    grid.forEach(cell => cell.classList.remove('highlight'));
+}
+
+grid.forEach((cell, index) => {
+    cell.addEventListener('mouseover', () => {
+        clearHighlights();
+        const termId = Object.keys(termLocations).find(key => {
+            const [row, col] = termLocations[key];
+            return (index === row * gridSize + col) || (index === row * gridSize + col + 1);
+        });
+        if (termId) {
+            highlightTerm(termId);
+            alphaContent.textContent = contentDatabase[termId].content;
+        } else {
+            alphaContent.textContent = '';
+        }
+    });
+});
 
 // Load and display the tree image
 const treeImage = new Image();
@@ -124,24 +162,7 @@ treeImage.src = 'tree_cropped.jpg';
 function populateLeafList() {
     leafList.innerHTML = '';
     
-    const items = [
-        { id: 'b1', indent: 0 },
-        { id: 'b2', indent: 20 },
-        { id: 'b3', indent: 20 },
-        { id: 'b4', indent: 20 },
-        { id: 'b5', indent: 40 },
-        { id: 'b6', indent: 40 },
-        { id: 'b7', indent: 60 },
-        { id: 'b8', indent: 60 },
-        { id: 'b9', indent: 80 },
-        { id: 'b10', indent: 80 },
-        { id: 'b11', indent: 80 },
-        { id: 'b12', indent: 0 },
-        { id: 'b13', indent: 20 },
-        { id: 'b14', indent: 20 },
-        { id: 'b16', indent: 20 },
-        { id: 'b15', indent: 40 }
-    ];
+    const items = Object.keys(contentDatabase).map(key => ({ id: key, indent: 0 }));
     
     items.forEach(item => {
         const data = contentDatabase[item.id];
@@ -149,10 +170,10 @@ function populateLeafList() {
             const li = document.createElement('li');
             li.textContent = `${data.english} | ${data.latin}`;
             li.style.paddingLeft = item.indent + 'px';
-            li.addEventListener('click', () => {
+            li.addEventListener('mouseover', () => {
+                clearHighlights();
+                highlightTerm(item.id);
                 alphaContent.textContent = data.content;
-                selectedArea = interactiveAreas.find(area => area.contentId === item.id);
-                drawInteractiveCanvas();
             });
             leafList.appendChild(li);
         }
@@ -160,61 +181,6 @@ function populateLeafList() {
 }
 
 populateLeafList();
-
-function drawInteractiveCanvas() {
-    iCtx.clearRect(0, 0, interactiveCanvas.width, interactiveCanvas.height);
-    if (selectedArea) {
-        iCtx.fillStyle = 'rgba(255, 255, 0, 0.3)';
-        iCtx.fillRect(selectedArea.x, selectedArea.y, selectedArea.width, selectedArea.height);
-    }
-}
-
-interactiveCanvas.addEventListener('mousemove', (e) => {
-    const rect = interactiveCanvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    let hoveredArea = null;
-    for (const area of interactiveAreas) {
-        if (x >= area.x && x <= area.x + area.width && y >= area.y && y <= area.y + area.height) {
-            hoveredArea = area;
-            break;
-        }
-    }
-
-    if (hoveredArea) {
-        alphaContent.textContent = contentDatabase[hoveredArea.contentId].content;
-    } else {
-        if (!selectedArea) {
-            alphaContent.textContent = 'Hover over a leaf to see its name';
-        } else {
-            alphaContent.textContent = contentDatabase[selectedArea.contentId].content;
-        }
-    }
-});
-
-interactiveCanvas.addEventListener('click', (e) => {
-    const rect = interactiveCanvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    let clickedArea = null;
-    for (const area of interactiveAreas) {
-        if (x >= area.x && x <= area.x + area.width && y >= area.y && y <= area.y + area.height) {
-            clickedArea = area;
-            break;
-        }
-    }
-
-    if (clickedArea) {
-        if (selectedArea === clickedArea) {
-            selectedArea = null;
-        } else {
-            selectedArea = clickedArea;
-        }
-        drawInteractiveCanvas();
-    }
-});
 
 // View navigation
 const views = ['viewLanding', 'viewSimple', 'viewEnglish'];
