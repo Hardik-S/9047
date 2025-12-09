@@ -6,7 +6,7 @@
 
 body {
     font-family: Arial, sans-serif;
-    background: radial-gradient(ellipse at center, #4a7cbf 0%, #2d5a8f 40%, #1a2942 70%, #000000 100%);
+    background: linear-gradient(to bottom, #1a2942 0%, #000000 100%);
     color: #f0e68c;
     min-height: 100vh;
     padding: 20px;
@@ -32,17 +32,17 @@ body::before {
         radial-gradient(2px 2px at 45% 20%, silver, transparent),
         radial-gradient(1px 1px at 70% 85%, white, transparent),
         radial-gradient(1px 1px at 25% 45%, silver, transparent);
-    background-size: 200% 200%;
+    background-size: 100% 100%;
     background-position: 0% 0%;
     pointer-events: none;
     z-index: 0;
     opacity: 0.6;
-    animation: twinkle 3s ease-in-out infinite;
+    animation: twinkle 5s ease-in-out infinite;
 }
 
 @keyframes twinkle {
     0%, 100% { opacity: 0.6; }
-    50% { opacity: 0.9; }
+    50% { opacity: 1; }
 }
 
 .container {
