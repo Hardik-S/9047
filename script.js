@@ -92,18 +92,16 @@ function buildSimplifiedTree() {
     simplifiedTreeContainer.innerHTML = '';
     simplifiedTreeSvg.innerHTML = '';
 
-    const terms = [
-        { id: 'b1', top: '90%', left: '45%' },
-        { id: 'b2', top: '70%', left: '25%' },
-        { id: 'b3', top: '70%', left: '45%' },
-        { id: 'b4', top: '70%', left: '65%' },
-        { id: 'b5', top: '50%', left: '15%' },
-        { id: 'b6', top: '50%', left: '35%' },
-        { id: 'b7', top: '50%', left: '55%' },
-        { id: 'b8', top: '50%', left: '75%' },
-        { id: 'b10', top: '30%', left: '85%' },
-        { id: 'b11', top: '30%', left: '5%' }
-    ];
+    const terms = Object.keys(contentDatabase).map(id => {
+        const location = termLocations[id];
+        if (location) {
+            const [row, col] = location;
+            const top = (row / gridSize) * 100 + '%';
+            const left = (col / gridSize) * 100 + '%';
+            return { id, top, left };
+        }
+        return null;
+    }).filter(Boolean);
 
     const connections = [
         { from: 'b1', to: 'b2' },
@@ -123,6 +121,7 @@ function buildSimplifiedTree() {
             const node = document.createElement('div');
             node.classList.add('tree-node');
             node.textContent = data.latin;
+            node.style.position = 'absolute';
             node.style.top = term.top;
             node.style.left = term.left;
             simplifiedTreeContainer.appendChild(node);
@@ -130,11 +129,21 @@ function buildSimplifiedTree() {
         }
     });
 
+    // Adjust positions for flipping the tree (root at bottom)
+    const containerHeight = simplifiedTreeContainer.offsetHeight;
+    terms.forEach(term => {
+        if (term.element) {
+            const currentTop = parseFloat(term.top);
+            const newTop = 100 - currentTop - (term.element.offsetHeight / containerHeight * 100);
+            term.element.style.top = newTop + '%';
+        }
+    });
+
     connections.forEach(connection => {
         const fromTerm = terms.find(t => t.id === connection.from);
         const toTerm = terms.find(t => t.id === connection.to);
 
-        if (fromTerm && toTerm) {
+        if (fromTerm && toTerm && fromTerm.element && toTerm.element) {
             const fromRect = fromTerm.element.getBoundingClientRect();
             const toRect = toTerm.element.getBoundingClientRect();
             const containerRect = simplifiedTreeContainer.getBoundingClientRect();
