@@ -149,6 +149,9 @@ function buildSimplifiedTree() {
 
 
     // Draw connections
+    // Get the actual dimensions of the SVG container
+    const svgRect = simplifiedTreeSvg.getBoundingClientRect();
+
     connections.forEach(connection => {
         const fromTerm = terms.find(t => t.id === connection.from);
         const toTerm = terms.find(t => t.id === connection.to);
@@ -156,13 +159,12 @@ function buildSimplifiedTree() {
         if (fromTerm && toTerm && fromTerm.element && toTerm.element) {
             const fromRect = fromTerm.element.getBoundingClientRect();
             const toRect = toTerm.element.getBoundingClientRect();
-            const containerRect = simplifiedTreeContainer.getBoundingClientRect();
 
-            // Calculate center points relative to the simplifiedTreeContainer
-            const x1 = fromRect.left + fromRect.width / 2 - containerRect.left;
-            const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
-            const x2 = toRect.left + toRect.width / 2 - containerRect.left;
-            const y2 = toRect.top + toRect.height / 2 - containerRect.top;
+            // Calculate center points relative to the SVG container
+            const x1 = fromRect.left + fromRect.width / 2 - svgRect.left;
+            const y1 = fromRect.top + fromRect.height / 2 - svgRect.top;
+            const x2 = toRect.left + toRect.width / 2 - svgRect.left;
+            const y2 = toRect.top + toRect.height / 2 - svgRect.top;
 
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', x1);
