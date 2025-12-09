@@ -1,7 +1,6 @@
 let contentDatabase = {};
 let termLocations = {};
 let currentlyHighlightedTerm = null;
-let currentSparkleNodeId = null;
 
 const canvas = document.getElementById('treeCanvas');
 const ctx = canvas.getContext('2d');
@@ -41,6 +40,16 @@ const treeViews = Object.entries(treeViewConfigs).reduce((acc, [key, config]) =>
     };
     return acc;
 }, {});
+
+const viewHighlightState = {
+    simplified: null,
+    english: null
+};
+
+const VIEW_KEY_TO_INDEX = {
+    simplified: 1,
+    english: 2
+};
 
 const gridSize = 30;
 const grid = [];
@@ -114,15 +123,20 @@ function populateLeafList() {
                     highlightTerm(item.id);
                     currentlyHighlightedTerm = item.id;
                 }
-                if (currentView === 1) {
-                    setSimplifiedNodeHighlight(item.id);
+                if (currentView === VIEW_KEY_TO_INDEX.simplified) {
+                    setTreeNodeHighlight('simplified', item.id);
+                } else if (currentView === VIEW_KEY_TO_INDEX.english) {
+                    setTreeNodeHighlight('english', item.id);
                 } else {
-                    clearSimplifiedNodeHighlight();
+                    clearAllTreeNodeHighlights();
                 }
             });
             li.addEventListener('mouseleave', () => {
-                if (li.dataset.termId === currentSparkleNodeId) {
-                    clearSimplifiedNodeHighlight();
+                if (currentView === VIEW_KEY_TO_INDEX.simplified && li.dataset.termId === viewHighlightState.simplified) {
+                    clearTreeNodeHighlight('simplified');
+                }
+                if (currentView === VIEW_KEY_TO_INDEX.english && li.dataset.termId === viewHighlightState.english) {
+                    clearTreeNodeHighlight('english');
                 }
             });
             leafList.appendChild(li);
@@ -261,6 +275,50 @@ const getRenderableTerms = () => {
 
 const getTreeView = (viewKey) => treeViews[viewKey];
 
+const getHighlightedTermId = (viewKey) => viewHighlightState[viewKey] || null;
+
+function isViewActive(viewKey) {
+    return VIEW_KEY_TO_INDEX[viewKey] === currentView;
+}
+
+function setTreeNodeHighlight(viewKey, termId) {
+    if (!viewKey || !termId) {
+        return;
+    }
+    if (!isViewActive(viewKey)) {
+        return;
+    }
+    const view = getTreeView(viewKey);
+    if (!view) {
+        return;
+    }
+    if (viewHighlightState[viewKey] === termId) {
+        return;
+    }
+    clearTreeNodeHighlight(viewKey);
+    const node = view.nodeMap[termId];
+    if (node) {
+        node.classList.add('sparkle');
+        viewHighlightState[viewKey] = termId;
+    }
+}
+
+function clearTreeNodeHighlight(viewKey) {
+    if (!viewKey) {
+        return;
+    }
+    const view = getTreeView(viewKey);
+    const highlightedId = getHighlightedTermId(viewKey);
+    if (view && highlightedId && view.nodeMap[highlightedId]) {
+        view.nodeMap[highlightedId].classList.remove('sparkle');
+    }
+    viewHighlightState[viewKey] = null;
+}
+
+function clearAllTreeNodeHighlights() {
+    Object.keys(viewHighlightState).forEach(clearTreeNodeHighlight);
+}
+
 function markConnectionsDirty(viewKey) {
     const view = getTreeView(viewKey);
     if (!view || !view.linesCanvas) {
@@ -361,11 +419,12 @@ function buildTreeViewNodes(viewKey) {
         });
     });
 
-    if (viewKey === 'simplified') {
-        if (currentSparkleNodeId && view.nodeMap[currentSparkleNodeId] && currentView === 1) {
-            view.nodeMap[currentSparkleNodeId].classList.add('sparkle');
-        } else if (currentSparkleNodeId && currentView !== 1) {
-            currentSparkleNodeId = null;
+    const highlightedId = getHighlightedTermId(viewKey);
+    if (highlightedId && view.nodeMap[highlightedId]) {
+        if (isViewActive(viewKey)) {
+            view.nodeMap[highlightedId].classList.add('sparkle');
+        } else {
+            viewHighlightState[viewKey] = null;
         }
     }
 
@@ -392,39 +451,6 @@ Promise.all([
 // View navigation
 const views = ['viewLanding', 'viewSimple', 'viewEnglish'];
 let currentView = 0;
-
-function setSimplifiedNodeHighlight(termId) {
-    if (currentView !== 1 || !termId) {
-        return;
-    }
-    const simplifiedView = getTreeView('simplified');
-    if (!simplifiedView) {
-        return;
-    }
-    if (currentSparkleNodeId === termId) {
-        return;
-    }
-    const node = simplifiedView.nodeMap[termId];
-    if (!node) {
-        clearSimplifiedNodeHighlight();
-        return;
-    }
-    clearSimplifiedNodeHighlight();
-    node.classList.add('sparkle');
-    currentSparkleNodeId = termId;
-}
-
-function clearSimplifiedNodeHighlight() {
-    if (!currentSparkleNodeId) {
-        return;
-    }
-    const simplifiedView = getTreeView('simplified');
-    const node = simplifiedView ? simplifiedView.nodeMap[currentSparkleNodeId] : null;
-    if (node) {
-        node.classList.remove('sparkle');
-    }
-    currentSparkleNodeId = null;
-}
 
 const backBtn = document.getElementById('backBtn');
 const nextBtn = document.getElementById('nextBtn');
@@ -483,14 +509,16 @@ function updateView() {
         buttonContainer.classList.add('back-left');
     }
 
-    if (currentView === 1) {
+    if (currentView === VIEW_KEY_TO_INDEX.simplified) {
         requestConnectionDraw('simplified');
     } else {
-        clearSimplifiedNodeHighlight();
+        clearTreeNodeHighlight('simplified');
     }
 
-    if (currentView === 2) {
+    if (currentView === VIEW_KEY_TO_INDEX.english) {
         requestConnectionDraw('english');
+    } else {
+        clearTreeNodeHighlight('english');
     }
 }
 
