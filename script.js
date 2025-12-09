@@ -9,7 +9,11 @@ const contentDatabase = {
     'b8': { latin: 'Confusa', english: 'Confused', content: 'Suppositio personalis communis confusa est acceptio termini communis pro re particulari confusa.' },
     'b9': { latin: 'Tantum', english: 'Only', content: 'Suppositio personalis communis confusa tantum est acceptio termini communis pro re particulari confusa tantum.' },
     'b10': { latin: 'Mobilis', english: 'Mobile', content: 'Suppositio personalis communis confusa mobilis est acceptio termini communis pro re particulari confusa mobilis.' },
-    'b11': { latin: 'Immobilis', english: 'Immobile', content: 'Suppositio personalis communis confusa immobilis est acceptio termini communis pro re particulari confusa immobilis.' }
+    'b11': { latin: 'Immobilis', english: 'Immobile', content: 'Suppositio personalis communis confusa immobilis est acceptio termini communis pro re particulari confusa immobilis.' },
+    'b12': { latin: 'Appellatio', english: 'Appellation', content: 'Appellatio est acceptio termini pro re existente.' },
+    'b13': { latin: 'Relativa', english: 'Relative', content: 'Appellatio relativa est acceptio termini pro re ad quam refertur.' },
+    'b14': { latin: 'Naturalis', english: 'Natural', content: 'Appellatio naturalis est acceptio termini pro re secundum naturam.' },
+    'b15': { latin: 'Consuetudinaria', english: 'Customary', content: 'Appellatio consuetudinaria est acceptio termini pro re secundum consuetudinem.' }
 };
 
 const canvas = document.getElementById('treeCanvas');
@@ -43,14 +47,18 @@ function populateLeafList() {
         { id: 'b8', indent: 60 },
         { id: 'b9', indent: 80 },
         { id: 'b10', indent: 80 },
-        { id: 'b11', indent: 80 }
+        { id: 'b11', indent: 80 },
+        { id: 'b12', indent: 0 },
+        { id: 'b13', indent: 20 },
+        { id: 'b14', indent: 40 },
+        { id: 'b15', indent: 40 }
     ];
     
     items.forEach(item => {
         const data = contentDatabase[item.id];
         if (data) {
             const li = document.createElement('li');
-            li.textContent = `${data.latin} | ${data.english}`;
+            li.textContent = `${data.english} | ${data.latin}`;
             li.style.paddingLeft = item.indent + 'px';
             li.addEventListener('click', () => {
                 alphaContent.textContent = data.content;
