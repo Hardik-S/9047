@@ -126,6 +126,12 @@ function buildSimplifiedTree() {
             node.style.left = term.left;
             simplifiedTreeContainer.appendChild(node);
             term.element = node;
+
+            node.addEventListener('mouseover', () => {
+                const data = contentDatabase[term.id];
+                alphaContent.textContent = data.content;
+                sectionAlphaTitle.textContent = `${data.english} | ${data.latin}`;
+            });
         }
     });
 
