@@ -1,4 +1,5 @@
 let contentDatabase = {};
+let termLocations = {};
 let currentlyHighlightedTerm = null;
 
 const canvas = document.getElementById('treeCanvas');
@@ -9,24 +10,6 @@ const leafList = document.getElementById('leafList');
 
 const gridSize = 30;
 const grid = [];
-const termLocations = {
-    'b1': [15, 13],
-    'b2': [9, 6],
-    'b3': [15, 6],
-    'b4': [21, 6],
-    'b5': [6, 18],
-    'b6': [12, 18],
-    'b7': [18, 18],
-    'b8': [24, 18],
-    'b9': [21, 24],
-    'b10': [27, 24],
-    'b11': [3, 24],
-    'b12': [15, 27],
-    'b13': [9, 3],
-    'b14': [15, 3],
-    'b15': [21, 3],
-    'b16': [27, 3]
-};
 
 for (let i = 0; i < gridSize * gridSize; i++) {
     const cell = document.createElement('div');
@@ -100,12 +83,14 @@ function populateLeafList() {
     });
 }
 
-fetch('content.json')
-    .then(response => response.json())
-    .then(data => {
-        contentDatabase = data;
-        populateLeafList();
-    });
+Promise.all([
+    fetch('content.json').then(response => response.json()),
+    fetch('coords.json').then(response => response.json())
+]).then(([content, coords]) => {
+    contentDatabase = content;
+    termLocations = coords;
+    populateLeafList();
+});
 
 // View navigation
 const views = ['viewLanding', 'viewSimple', 'viewEnglish'];
