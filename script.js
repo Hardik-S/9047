@@ -229,12 +229,9 @@ function updateView() {
     }
 
     // Update button container alignment
-    buttonContainer.classList.remove('space-between', 'left-align');
-    
-    if (currentView === 1) { // Simple view - space between
-        buttonContainer.classList.add('space-between');
-    } else if (currentView === 2) { // English view - space between
-        buttonContainer.classList.add('space-between');
+    buttonContainer.classList.remove('space-between', 'left-align', 'back-left');
+    if (currentView === 1 || currentView === 2) {
+        buttonContainer.classList.add('back-left');
     }
 }
 

@@ -105,6 +105,15 @@ canvas {
     gap: 10px;
     justify-content: flex-end;
     margin-top: 10px;
+    width: 100%;
+}
+
+.button-container.back-left {
+    justify-content: flex-start;
+}
+
+.button-container.back-left #nextBtn {
+    margin-left: auto;
 }
 
 .zoom-toggle-container {
