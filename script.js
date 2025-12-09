@@ -10,6 +10,9 @@ const sectionAlphaTitle = document.getElementById('section-alpha-title');
 const leafList = document.getElementById('leafList');
 const simplifiedTreeContainer = document.getElementById('simplified-tree-container');
 const simplifiedTreeSvg = document.getElementById('simplified-tree-svg');
+const zoomToggleContainer = document.getElementById('zoomToggleContainer');
+const zoomToggleBtn = document.getElementById('zoomToggleBtn');
+const TREE_IMAGE_SRC = 'images/circle_crop_tree.png';
 
 const gridSize = 30;
 const grid = [];
@@ -63,7 +66,7 @@ treeImage.onload = function() {
 
 // Set the image source - using a placeholder for now
 // You'll need to upload your image and replace this URL
-treeImage.src = 'images/circle_crop_tree.png';
+treeImage.src = TREE_IMAGE_SRC;
 
 // Populate selection list
 function populateLeafList() {
@@ -213,6 +216,10 @@ function updateView() {
         backBtn.classList.add('hidden');
     }
 
+    if (zoomToggleContainer) {
+        zoomToggleContainer.classList.toggle('hidden', currentView !== 0);
+    }
+
     // Update next button
     if (config.next && config.next.show) {
         nextBtn.textContent = config.next.text;
@@ -248,3 +255,144 @@ backBtn.addEventListener('click', () => {
 });
 
 updateView();
+
+const setZoomToggleState = (isOpen) => {
+    if (!zoomToggleBtn) {
+        return;
+    }
+    zoomToggleBtn.textContent = isOpen ? 'Close Zoom View' : 'Open Zoom View';
+    zoomToggleBtn.setAttribute('aria-pressed', String(isOpen));
+};
+
+setZoomToggleState(false);
+
+const zoomModalController = setupTreeZoomModal(setZoomToggleState);
+
+if (zoomToggleBtn && zoomModalController) {
+    zoomToggleBtn.addEventListener('click', () => {
+        zoomModalController.toggle();
+    });
+}
+
+function setupTreeZoomModal(onStateChange) {
+    const canvasElement = document.getElementById('treeCanvas');
+    const modal = document.getElementById('imageModal');
+    const closeBtn = document.getElementById('modalCloseBtn');
+    const zoomView = document.getElementById('zoomView');
+    if (!canvasElement || !modal || !closeBtn || !zoomView) {
+        if (typeof onStateChange === 'function') {
+            onStateChange(false);
+        }
+        return;
+    }
+
+    const magnification = 5;
+    let isPointerActive = false;
+    let isModalOpen = false;
+    let lastPosition = { x: 0.5, y: 0.5 };
+
+    const notifyStateChange = (state) => {
+        if (typeof onStateChange === 'function') {
+            onStateChange(state);
+        }
+    };
+
+    zoomView.style.backgroundSize = `${magnification * 100}% ${magnification * 100}%`;
+    zoomView.style.backgroundImage = `url('${TREE_IMAGE_SRC}')`;
+
+    const clamp = (value) => Math.min(Math.max(value, 0), 1);
+
+    const updateZoomView = (relativeX, relativeY) => {
+        const clampedX = clamp(relativeX);
+        const clampedY = clamp(relativeY);
+        zoomView.style.backgroundPosition = `${clampedX * 100}% ${clampedY * 100}%`;
+        lastPosition = { x: clampedX, y: clampedY };
+    };
+
+    const openModal = (relativeX = lastPosition.x, relativeY = lastPosition.y) => {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        isModalOpen = true;
+        updateZoomView(relativeX, relativeY);
+        notifyStateChange(true);
+    };
+
+    const closeModal = () => {
+        if (modal.classList.contains('hidden')) {
+            return;
+        }
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+        isPointerActive = false;
+        isModalOpen = false;
+        notifyStateChange(false);
+    };
+
+    const updatePositionFromEvent = (event) => {
+        const rect = zoomView.getBoundingClientRect();
+        const relativeX = (event.clientX - rect.left) / rect.width;
+        const relativeY = (event.clientY - rect.top) / rect.height;
+        updateZoomView(relativeX, relativeY);
+    };
+
+    const handleCanvasClick = (event) => {
+        const rect = canvasElement.getBoundingClientRect();
+        const relativeX = (event.clientX - rect.left) / rect.width;
+        const relativeY = (event.clientY - rect.top) / rect.height;
+        openModal(relativeX, relativeY);
+    };
+
+    const handlePointerDown = (event) => {
+        isPointerActive = true;
+        updatePositionFromEvent(event);
+    };
+
+    const handlePointerMove = (event) => {
+        if (!isPointerActive) {
+            return;
+        }
+        updatePositionFromEvent(event);
+    };
+
+    const handlePointerUp = () => {
+        isPointerActive = false;
+    };
+
+    canvasElement.addEventListener('click', handleCanvasClick);
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    zoomView.addEventListener('pointerdown', handlePointerDown);
+    zoomView.addEventListener('pointermove', handlePointerMove);
+    zoomView.addEventListener('pointerup', handlePointerUp);
+    zoomView.addEventListener('pointerleave', handlePointerUp);
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+
+    notifyStateChange(false);
+
+    return {
+        openAt(relativeX = lastPosition.x, relativeY = lastPosition.y) {
+            openModal(relativeX, relativeY);
+        },
+        close: closeModal,
+        toggle() {
+            if (isModalOpen) {
+                closeModal();
+            } else {
+                openModal(lastPosition.x, lastPosition.y);
+            }
+        },
+        isOpen() {
+            return isModalOpen;
+        }
+    };
+}
