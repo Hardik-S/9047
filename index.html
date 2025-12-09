@@ -18,7 +18,7 @@
             min-height: 100vh;
             padding: 20px;
             position: relative;
-            overflow-x: hidden;
+            overflow: hidden;
         }
 
         body::before {
@@ -178,6 +178,23 @@
         .hidden {
             display: none;
         }
+
+        @media (max-width: 1024px) {
+          .container, .version {
+            display: none;
+          }
+          body::before {
+            display: none;
+          }
+          body::after {
+            content: "This website is only available on laptop screens or larger.";
+            color: white;
+            font-size: 2em;
+            text-align: center;
+            display: block;
+            margin-top: 20%;
+          }
+        }
     </style>
 </head>
 <body>
@@ -307,7 +324,7 @@
         
         // Set the image source - using a placeholder for now
         // You'll need to upload your image and replace this URL
-        treeImage.src = '592715959_904124298850896_2549472718723399855_n.jpg';
+        treeImage.src = 'tree_cropped.jpg';
 
         // Populate selection list
         function populateLeafList() {
