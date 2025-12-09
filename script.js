@@ -135,47 +135,29 @@ function buildSimplifiedTree() {
         });
     });
 
-    // Adjust node positions after rendering to account for element size
-    terms.forEach(term => {
-        if (term.element) {
-            const nodeWidth = term.element.offsetWidth;
-            const nodeHeight = term.element.offsetHeight;
-            // Center the node based on its size
-            term.element.style.left = `calc(${term.x}% - ${nodeWidth / 2}px)`;
-            // Adjust top for flipped tree: 100% - (original_y% + node_height_percentage)
-            term.element.style.top = `calc(${100 - term.y}% - ${nodeHeight}px)`; // Adjust for height to place bottom at original y
-        }
-    });
+    // Draw connections after a short delay
+    setTimeout(() => {
+        connections.forEach(connection => {
+            const fromTerm = terms.find(t => t.id === connection.from);
+            const toTerm = terms.find(t => t.id === connection.to);
 
+            if (fromTerm && toTerm && fromTerm.element && toTerm.element) {
+                const x1 = fromTerm.element.offsetLeft + fromTerm.element.offsetWidth / 2;
+                const y1 = fromTerm.element.offsetTop + fromTerm.element.offsetHeight / 2;
+                const x2 = toTerm.element.offsetLeft + toTerm.element.offsetWidth / 2;
+                const y2 = toTerm.element.offsetTop + toTerm.element.offsetHeight / 2;
 
-    // Draw connections
-    // Get the actual dimensions of the SVG container
-    const svgRect = simplifiedTreeSvg.getBoundingClientRect();
-
-    connections.forEach(connection => {
-        const fromTerm = terms.find(t => t.id === connection.from);
-        const toTerm = terms.find(t => t.id === connection.to);
-
-        if (fromTerm && toTerm && fromTerm.element && toTerm.element) {
-            const fromRect = fromTerm.element.getBoundingClientRect();
-            const toRect = toTerm.element.getBoundingClientRect();
-
-            // Calculate center points relative to the SVG container
-            const x1 = fromRect.left + fromRect.width / 2 - svgRect.left;
-            const y1 = fromRect.top + fromRect.height / 2 - svgRect.top;
-            const x2 = toRect.left + toRect.width / 2 - svgRect.left;
-            const y2 = toRect.top + toRect.height / 2 - svgRect.top;
-
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', x1);
-            line.setAttribute('y1', y1);
-            line.setAttribute('x2', x2);
-            line.setAttribute('y2', y2);
-            line.setAttribute('stroke', '#ffd700'); // Gold color
-            line.setAttribute('stroke-width', '1'); // Thin line
-            simplifiedTreeSvg.appendChild(line);
-        }
-    });
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', '#ffd700'); // Gold color
+                line.setAttribute('stroke-width', '1'); // Thin line
+                simplifiedTreeSvg.appendChild(line);
+            }
+        });
+    }, 100);
 }
 
 Promise.all([
