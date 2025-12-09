@@ -186,6 +186,22 @@ button:hover {
     box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
 }
 
+#simplified-tree-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.tree-node {
+    position: absolute;
+    background-color: #0d1b2e;
+    color: #ffd700;
+    border: 1px solid #3d5a8c;
+    border-radius: 5px;
+    padding: 5px 10px;
+    text-align: center;
+}
+
 .hidden {
     display: none;
 }

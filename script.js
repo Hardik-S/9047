@@ -7,6 +7,7 @@ const ctx = canvas.getContext('2d');
 const gridContainer = document.getElementById('grid-container');
 const alphaContent = document.getElementById('alphaContent');
 const leafList = document.getElementById('leafList');
+const simplifiedTreeContainer = document.getElementById('simplified-tree-container');
 
 const gridSize = 30;
 const grid = [];
@@ -83,6 +84,36 @@ function populateLeafList() {
     });
 }
 
+function buildSimplifiedTree() {
+    simplifiedTreeContainer.innerHTML = '';
+    const terms = [
+        { id: 'b1', top: '10%', left: '45%' },
+        { id: 'b2', top: '30%', left: '25%' },
+        { id: 'b3', top: '30%', left: '45%' },
+        { id: 'b4', top: '30%', left: '65%' },
+        { id: 'b5', top: '50%', left: '15%' },
+        { id: 'b6', top: '50%', left: '35%' },
+        { id: 'b7', top: '50%', left: '55%' },
+        { id: 'b8', top: '50%', left: '75%' },
+        { id: 'b9', top: '70%', left: '65%' },
+        { id: 'b10', top: '70%', left: '85%' },
+        { id: 'b11', top: '70%', left: '5%' },
+        { id: 'b12', top: '90%', left: '45%' }
+    ];
+
+    terms.forEach(term => {
+        const data = contentDatabase[term.id];
+        if (data) {
+            const node = document.createElement('div');
+            node.classList.add('tree-node');
+            node.textContent = data.latin;
+            node.style.top = term.top;
+            node.style.left = term.left;
+            simplifiedTreeContainer.appendChild(node);
+        }
+    });
+}
+
 Promise.all([
     fetch('content.json').then(response => response.json()),
     fetch('coords.json').then(response => response.json())
@@ -90,6 +121,7 @@ Promise.all([
     contentDatabase = content;
     termLocations = coords;
     populateLeafList();
+    buildSimplifiedTree();
 });
 
 // View navigation
