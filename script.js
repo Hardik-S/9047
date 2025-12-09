@@ -64,6 +64,10 @@ grid.forEach((cell, index) => {
             alphaContent.textContent = '';
         }
     });
+    cell.addEventListener('mouseout', () => {
+        clearHighlights();
+        alphaContent.textContent = '';
+    });
 });
 
 // Load and display the tree image
@@ -92,7 +96,9 @@ function populateLeafList() {
             li.addEventListener('mouseover', () => {
                 clearHighlights();
                 highlightTerm(item.id);
-                alphaContent.textContent = data.content;
+            });
+            li.addEventListener('mouseout', () => {
+                clearHighlights();
             });
             leafList.appendChild(li);
         }
