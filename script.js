@@ -6,6 +6,7 @@ const canvas = document.getElementById('treeCanvas');
 const ctx = canvas.getContext('2d');
 const gridContainer = document.getElementById('grid-container');
 const alphaContent = document.getElementById('alphaContent');
+const sectionAlphaTitle = document.getElementById('section-alpha-title');
 const leafList = document.getElementById('leafList');
 const simplifiedTreeContainer = document.getElementById('simplified-tree-container');
 const simplifiedTreeSvg = document.getElementById('simplified-tree-svg');
@@ -45,7 +46,9 @@ grid.forEach((cell, index) => {
         });
         if (termId) {
             highlightTerm(termId);
-            alphaContent.textContent = contentDatabase[termId].content;
+            const data = contentDatabase[termId];
+            alphaContent.textContent = data.content;
+            sectionAlphaTitle.textContent = `${data.english} | ${data.latin}`;
             currentlyHighlightedTerm = termId;
         }
     });
