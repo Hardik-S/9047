@@ -1,6 +1,7 @@
 let contentDatabase = {};
 let termLocations = {};
 let currentlyHighlightedTerm = null;
+let currentSparkleNodeId = null;
 
 const canvas = document.getElementById('treeCanvas');
 const ctx = canvas.getContext('2d');
@@ -9,7 +10,8 @@ const alphaContent = document.getElementById('alphaContent');
 const sectionAlphaTitle = document.getElementById('section-alpha-title');
 const leafList = document.getElementById('leafList');
 const simplifiedTreeContainer = document.getElementById('simplified-tree-container');
-const simplifiedTreeSvg = document.getElementById('simplified-tree-svg');
+const simplifiedNodesLayer = document.getElementById('simplifiedNodesLayer');
+const simplifiedLinesCanvas = document.getElementById('simplifiedLinesCanvas');
 const zoomToggleContainer = document.getElementById('zoomToggleContainer');
 const zoomToggleBtn = document.getElementById('zoomToggleBtn');
 const TREE_IMAGE_SRC = 'images/circle_crop_tree.png';
@@ -80,10 +82,21 @@ function populateLeafList() {
             const li = document.createElement('li');
             li.textContent = `${data.english} | ${data.latin}`;
             li.style.paddingLeft = item.indent + 'px';
+            li.dataset.termId = item.id;
             li.addEventListener('mouseover', () => {
                 if (currentlyHighlightedTerm !== item.id) {
                     highlightTerm(item.id);
                     currentlyHighlightedTerm = item.id;
+                }
+                if (currentView === 1) {
+                    setSimplifiedNodeHighlight(item.id);
+                } else {
+                    clearSimplifiedNodeHighlight();
+                }
+            });
+            li.addEventListener('mouseleave', () => {
+                if (li.dataset.termId === currentSparkleNodeId) {
+                    clearSimplifiedNodeHighlight();
                 }
             });
             leafList.appendChild(li);
@@ -91,46 +104,213 @@ function populateLeafList() {
     });
 }
 
+const DEFAULT_SIMPLIFIED_CONNECTIONS = [
+    { from: 'b1', to: 'b2' },
+    { from: 'b1', to: 'b3' },
+    { from: 'b1', to: 'b4' },
+    { from: 'b2', to: 'b5' },
+    { from: 'b2', to: 'b6' },
+    { from: 'b4', to: 'b7' },
+    { from: 'b4', to: 'b8' },
+    { from: 'b8', to: 'b10' },
+    { from: 'b3', to: 'b11' }
+];
+
+const nodePositionOverrides = {
+    b10: { topOffset: 12, leftOffset: 4 },
+    b11: { topOffset: -4, leftOffset: 0 }
+};
+
+const clampPercentage = (value) => Math.max(0, Math.min(100, value));
+
+let simplifiedConnections = [...DEFAULT_SIMPLIFIED_CONNECTIONS];
+let simplifiedNodeMap = {};
+let simplifiedConnectionsDirty = false;
+let simplifiedConnectionsFrameScheduled = false;
+
+const sanitizeName = (name) => {
+    return name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim()
+        .replace(/\s+/g, ' ');
+};
+
+function buildNodeLookup(database) {
+    const lookup = new Map();
+    Object.entries(database).forEach(([id, data]) => {
+        const latin = sanitizeName(data.latin || '');
+        const english = sanitizeName(data.english || '');
+        [latin, english].forEach(key => {
+            if (key && !lookup.has(key)) {
+                lookup.set(key, id);
+            }
+        });
+    });
+    return lookup;
+}
+
+function resolveNodeId(name, lookup) {
+    if (!name || !lookup) {
+        return null;
+    }
+    const sanitized = sanitizeName(name);
+    if (!sanitized) {
+        return null;
+    }
+    if (lookup.has(sanitized)) {
+        return lookup.get(sanitized);
+    }
+    for (const [key, value] of lookup.entries()) {
+        if (key.includes(sanitized) || sanitized.includes(key)) {
+            return value;
+        }
+    }
+    return null;
+}
+
+function parseConnectionText(text, lookup) {
+    if (!text || !lookup) {
+        return [];
+    }
+    const lines = text.split(/\r?\n/);
+    const edges = [];
+    let currentParentId = null;
+
+    lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+            currentParentId = null;
+            return;
+        }
+
+        if (!trimmed.startsWith('-')) {
+            currentParentId = resolveNodeId(trimmed, lookup);
+            return;
+        }
+
+        if (!currentParentId) {
+            return;
+        }
+
+        const childName = trimmed.replace(/^-+/, '').trim();
+        const childId = resolveNodeId(childName, lookup);
+        if (childId) {
+            edges.push({ from: currentParentId, to: childId });
+        }
+    });
+
+    return edges;
+}
+
+function updateSimplifiedConnectionsFromText(connectionText) {
+    const lookup = buildNodeLookup(contentDatabase);
+    const parsed = parseConnectionText(connectionText, lookup);
+    if (parsed.length) {
+        simplifiedConnections = parsed;
+    } else {
+        simplifiedConnections = [...DEFAULT_SIMPLIFIED_CONNECTIONS];
+    }
+    markSimplifiedConnectionsDirty();
+}
+
+function applyPositionOverrides(id, baseX, baseY) {
+    const override = nodePositionOverrides[id] || {};
+    return {
+        left: clampPercentage(baseX + (override.leftOffset || 0)),
+        top: clampPercentage(baseY + (override.topOffset || 0))
+    };
+}
+
+function markSimplifiedConnectionsDirty() {
+    simplifiedConnectionsDirty = true;
+    requestSimplifiedConnectionDraw();
+}
+
+function requestSimplifiedConnectionDraw() {
+    if (!simplifiedLinesCanvas || simplifiedConnectionsFrameScheduled || !simplifiedConnectionsDirty) {
+        return;
+    }
+    simplifiedConnectionsFrameScheduled = true;
+    requestAnimationFrame(() => {
+        simplifiedConnectionsFrameScheduled = false;
+        drawSimplifiedConnections();
+    });
+}
+
+function drawSimplifiedConnections() {
+    if (!simplifiedLinesCanvas || !simplifiedTreeContainer || !simplifiedConnectionsDirty) {
+        return;
+    }
+
+    const containerRect = simplifiedTreeContainer.getBoundingClientRect();
+    if (!containerRect.width || !containerRect.height) {
+        return;
+    }
+
+    simplifiedConnectionsDirty = false;
+    simplifiedLinesCanvas.width = containerRect.width;
+    simplifiedLinesCanvas.height = containerRect.height;
+
+    const ctx = simplifiedLinesCanvas.getContext('2d');
+    ctx.clearRect(0, 0, simplifiedLinesCanvas.width, simplifiedLinesCanvas.height);
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+
+    simplifiedConnections.forEach(connection => {
+        const fromNode = simplifiedNodeMap[connection.from];
+        const toNode = simplifiedNodeMap[connection.to];
+        if (!fromNode || !toNode) {
+            return;
+        }
+
+        const fromRect = fromNode.getBoundingClientRect();
+        const toRect = toNode.getBoundingClientRect();
+
+        const startX = fromRect.left - containerRect.left + fromRect.width / 2;
+        const startY = fromRect.top - containerRect.top + fromRect.height / 2;
+        const endX = toRect.left - containerRect.left + toRect.width / 2;
+        const endY = toRect.top - containerRect.top + toRect.height / 2;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+    });
+}
+
 function buildSimplifiedTree() {
-    simplifiedTreeContainer.innerHTML = '';
-    simplifiedTreeSvg.innerHTML = '';
+    if (!simplifiedTreeContainer || !simplifiedNodesLayer) {
+        return;
+    }
+
+    simplifiedNodesLayer.innerHTML = '';
+    simplifiedNodeMap = {};
 
     const terms = Object.keys(contentDatabase).map(id => {
         const data = contentDatabase[id];
         const location = termLocations[id];
         if (location) {
             const [row, col] = location;
-            // Calculate position based on grid coordinates
             const x = (col / gridSize) * 100;
             const y = (row / gridSize) * 100;
-            return { id, data, x, y, element: null };
+            return { id, data, x, y };
         }
         return null;
     }).filter(Boolean);
 
-    const connections = [
-        { from: 'b1', to: 'b2' },
-        { from: 'b1', to: 'b3' },
-        { from: 'b1', to: 'b4' },
-        { from: 'b2', to: 'b5' },
-        { from: 'b2', to: 'b6' },
-        { from: 'b4', to: 'b7' },
-        { from: 'b4', to: 'b8' },
-        { from: 'b8', to: 'b10' },
-        { from: 'b3', to: 'b11' }
-    ];
-
-    // Create nodes
     terms.forEach(term => {
         const node = document.createElement('div');
         node.classList.add('tree-node');
         node.textContent = term.data.latin;
-        node.style.position = 'absolute';
-        // Flip Y-axis for root at bottom
-        node.style.left = `${term.x}%`;
-        node.style.top = `${100 - term.y}%`; // Initial flip
-        simplifiedTreeContainer.appendChild(node);
-        term.element = node;
+
+        const { left, top } = applyPositionOverrides(term.id, term.x, term.y);
+        node.style.left = `${left}%`;
+        node.style.top = `${top}%`;
+
+        simplifiedNodesLayer.appendChild(node);
+        simplifiedNodeMap[term.id] = node;
 
         node.addEventListener('mouseover', () => {
             alphaContent.textContent = term.data.content;
@@ -138,44 +318,62 @@ function buildSimplifiedTree() {
         });
     });
 
-    // Draw connections after a short delay
-    setTimeout(() => {
-        connections.forEach(connection => {
-            const fromTerm = terms.find(t => t.id === connection.from);
-            const toTerm = terms.find(t => t.id === connection.to);
+    if (currentSparkleNodeId && simplifiedNodeMap[currentSparkleNodeId]) {
+        if (currentView === 1) {
+            simplifiedNodeMap[currentSparkleNodeId].classList.add('sparkle');
+        } else {
+            currentSparkleNodeId = null;
+        }
+    } else {
+        currentSparkleNodeId = null;
+    }
 
-            if (fromTerm && toTerm && fromTerm.element && toTerm.element) {
-                const x1 = fromTerm.element.offsetLeft + fromTerm.element.offsetWidth / 2;
-                const y1 = fromTerm.element.offsetTop + fromTerm.element.offsetHeight / 2;
-                const x2 = toTerm.element.offsetLeft + toTerm.element.offsetWidth / 2;
-                const y2 = toTerm.element.offsetTop + toTerm.element.offsetHeight / 2;
-
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', x1);
-                line.setAttribute('y1', y1);
-                line.setAttribute('x2', x2);
-                line.setAttribute('y2', y2);
-                line.setAttribute('stroke', '#ffd700'); // Gold color
-                line.setAttribute('stroke-width', '1'); // Thin line
-                simplifiedTreeSvg.appendChild(line);
-            }
-        });
-    }, 100);
+    markSimplifiedConnectionsDirty();
 }
 
 Promise.all([
     fetch('content.json').then(response => response.json()),
-    fetch('coords.json').then(response => response.json())
-]).then(([content, coords]) => {
+    fetch('coords.json').then(response => response.json()),
+    fetch('connections.txt').then(response => response.text()).catch(() => '')
+]).then(([content, coords, connectionText]) => {
     contentDatabase = content;
     termLocations = coords;
     populateLeafList();
+    updateSimplifiedConnectionsFromText(connectionText);
     buildSimplifiedTree();
 });
 
 // View navigation
 const views = ['viewLanding', 'viewSimple', 'viewEnglish'];
 let currentView = 0;
+
+function setSimplifiedNodeHighlight(termId) {
+    if (currentView !== 1 || !termId) {
+        return;
+    }
+    if (currentSparkleNodeId === termId) {
+        return;
+    }
+    const node = simplifiedNodeMap[termId];
+    if (!node) {
+        clearSimplifiedNodeHighlight();
+        return;
+    }
+    clearSimplifiedNodeHighlight();
+    node.classList.add('sparkle');
+    currentSparkleNodeId = termId;
+}
+
+function clearSimplifiedNodeHighlight() {
+    if (!currentSparkleNodeId) {
+        return;
+    }
+    const node = simplifiedNodeMap[currentSparkleNodeId];
+    if (node) {
+        node.classList.remove('sparkle');
+    }
+    currentSparkleNodeId = null;
+}
 
 const backBtn = document.getElementById('backBtn');
 const nextBtn = document.getElementById('nextBtn');
@@ -233,6 +431,12 @@ function updateView() {
     if (currentView === 1 || currentView === 2) {
         buttonContainer.classList.add('back-left');
     }
+
+    if (currentView === 1) {
+        requestSimplifiedConnectionDraw();
+    } else {
+        clearSimplifiedNodeHighlight();
+    }
 }
 
 nextBtn.addEventListener('click', () => {
@@ -249,6 +453,13 @@ nextBtn.addEventListener('click', () => {
 backBtn.addEventListener('click', () => {
     currentView = 0; // Always back to Landing
     updateView();
+});
+
+window.addEventListener('resize', () => {
+    if (!simplifiedTreeContainer || !Object.keys(simplifiedNodeMap).length) {
+        return;
+    }
+    markSimplifiedConnectionsDirty();
 });
 
 updateView();

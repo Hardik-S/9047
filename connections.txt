@@ -1,0 +1,19 @@
+suppositio 
+- discrete
+- common
+
+common
+- material
+
+material
+- personal
+- simple
+
+personal
+- determinate
+- confused 
+
+confused 
+- movable
+- immovable 
+

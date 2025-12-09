@@ -278,11 +278,21 @@ button:hover {
     position: relative;
 }
 
-#simplified-tree-svg {
+#simplifiedLinesCanvas,
+#simplifiedNodesLayer {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: -1;
+    width: 100%;
+    height: 100%;
+}
+
+#simplifiedLinesCanvas {
+    z-index: 0;
+}
+
+#simplifiedNodesLayer {
+    z-index: 1;
 }
 
 .tree-node {
@@ -293,6 +303,30 @@ button:hover {
     border-radius: 5px;
     padding: 5px 10px;
     text-align: center;
+    z-index: 2;
+}
+
+.tree-node.sparkle {
+    border-color: #ffd700;
+    background: radial-gradient(circle at top, rgba(255, 215, 0, 0.3), #0d1b2e 60%);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.8), 0 0 25px rgba(255, 215, 0, 0.4);
+    color: #fffceb;
+    animation: sparklePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes sparklePulse {
+    0% {
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.6), 0 0 18px rgba(255, 215, 0, 0.3);
+        transform: translateY(0);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(255, 215, 0, 0.9), 0 0 30px rgba(255, 215, 0, 0.5);
+        transform: translateY(-1px);
+    }
+    100% {
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.6), 0 0 18px rgba(255, 215, 0, 0.3);
+        transform: translateY(0);
+    }
 }
 
 .hidden {
