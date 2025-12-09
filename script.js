@@ -2,6 +2,11 @@ let contentDatabase = {};
 let termLocations = {};
 let currentlyHighlightedTerm = null;
 
+const APP_VERSION = 'v1.0.9';
+if (typeof document !== 'undefined' && document.body) {
+    document.body.dataset.appVersion = APP_VERSION;
+}
+
 const canvas = document.getElementById('treeCanvas');
 const ctx = canvas.getContext('2d');
 const gridContainer = document.getElementById('grid-container');
@@ -87,7 +92,7 @@ grid.forEach((cell, index) => {
         if (termId) {
             highlightTerm(termId);
             const data = contentDatabase[termId];
-            alphaContent.textContent = data.content;
+            alphaContent.innerHTML = data.content;
             sectionAlphaTitle.textContent = `${data.english} | ${data.latin}`;
             currentlyHighlightedTerm = termId;
         }
@@ -414,7 +419,7 @@ function buildTreeViewNodes(viewKey) {
         view.nodeMap[term.id] = node;
 
         node.addEventListener('mouseover', () => {
-            alphaContent.textContent = term.data.content;
+            alphaContent.innerHTML = term.data.content;
             sectionAlphaTitle.textContent = `${term.data.english} | ${term.data.latin}`;
         });
     });

@@ -3,9 +3,10 @@ suppositio
 - common
 
 common
-- material
+- accidental
+- natural
 
-material
+accidental
 - personal
 - simple
 

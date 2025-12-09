@@ -263,6 +263,16 @@ button:hover {
     text-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
 }
 
+.display-subtitle {
+    text-align: right;
+    margin-top: -8px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #d3c5ff;
+}
+
 .leaf-list {
     list-style: none;
     padding: 0;
