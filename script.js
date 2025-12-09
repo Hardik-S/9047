@@ -56,6 +56,13 @@ const VIEW_KEY_TO_INDEX = {
     english: 2
 };
 
+const formatTermContent = (text) => {
+    if (!text) {
+        return '';
+    }
+    return text.replace(/\nExamples:/g, '<br><br><strong>Examples:</strong>');
+};
+
 const gridSize = 30;
 const grid = [];
 
@@ -92,7 +99,7 @@ grid.forEach((cell, index) => {
         if (termId) {
             highlightTerm(termId);
             const data = contentDatabase[termId];
-            alphaContent.innerHTML = data.content;
+            alphaContent.innerHTML = formatTermContent(data.content);
             sectionAlphaTitle.textContent = `${data.english} | ${data.latin}`;
             currentlyHighlightedTerm = termId;
         }
@@ -419,7 +426,7 @@ function buildTreeViewNodes(viewKey) {
         view.nodeMap[term.id] = node;
 
         node.addEventListener('mouseover', () => {
-            alphaContent.innerHTML = term.data.content;
+            alphaContent.innerHTML = formatTermContent(term.data.content);
             sectionAlphaTitle.textContent = `${term.data.english} | ${term.data.latin}`;
         });
     });
