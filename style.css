@@ -76,10 +76,7 @@ body::before {
     display: grid;
     grid-template-columns: repeat(30, 1fr);
     grid-template-rows: repeat(30, 1fr);
-}
-
-.grid-cell.highlight {
-    background-color: rgba(255, 255, 0, 0.3);
+    z-index: 1;
 }
 
 canvas {
@@ -92,6 +89,7 @@ canvas {
     margin: 0 auto;
     background-color: transparent;
     border-radius: 5px;
+    z-index: 0;
 }
 
 .leaf-list {
