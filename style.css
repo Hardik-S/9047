@@ -107,18 +107,28 @@ button:hover {
     background-color: #3d5a8c;
 }
 
+.info {
+    display: flex;
+    flex-direction: column;
+}
+
+#section-alpha {
+    height: 50%;
+}
+
+#selection-list {
+    height: 50%;
+    overflow-y: auto;
+}
+
 .info-section {
     background-color: #2d4a7c;
     border: 1px solid #3d5a8c;
     border-radius: 5px;
     padding: 10px;
-    height: 45%;
-    overflow-y: auto;
 }
 
 .info-section.beta {
-    margin-top: 10%;
-    height: 45%;
 }
 
 .info-section h3 {
