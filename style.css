@@ -280,13 +280,15 @@ button:hover {
 }
 
 .display-subtitle {
-    text-align: right;
+    text-align: center;
     margin-top: -8px;
     margin-bottom: 10px;
     font-size: 0.9rem;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: #d3c5ff;
+    color: #050c1a;
+    -webkit-text-stroke: 0.25px #fff;
+    text-stroke: 0.25px #fff;
 }
 
 .leaf-list {

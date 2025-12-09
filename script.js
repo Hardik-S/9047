@@ -428,6 +428,15 @@ function buildTreeViewNodes(viewKey) {
         node.addEventListener('mouseover', () => {
             alphaContent.innerHTML = formatTermContent(term.data.content);
             sectionAlphaTitle.textContent = `${term.data.english} | ${term.data.latin}`;
+            if (isViewActive(viewKey)) {
+                setTreeNodeHighlight(viewKey, term.id);
+            }
+        });
+
+        node.addEventListener('mouseleave', () => {
+            if (viewHighlightState[viewKey] === term.id) {
+                clearTreeNodeHighlight(viewKey);
+            }
         });
     });
 
