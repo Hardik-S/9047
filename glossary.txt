@@ -1,0 +1,19 @@
+# Glossary of Terms
+
+This glossary provides a common vocabulary for discussing the different parts of the Tree Website.
+
+## Main Windows
+
+*   **Display Window:** The main window on the left that contains the tree image and the different views.
+*   **Info Window:** The window on the right that contains the "Section Alpha" and the "Selection List".
+
+## Views (within the Display Window)
+
+*   **Landing View:** The initial view that shows the full tree image with the interactive grid.
+*   **Simplified View:** The view that shows a simplified version of the tree.
+*   **English View:** The view that shows the English version of the tree.
+
+## Panes (within the Info Window)
+
+*   **Section Alpha:** The top pane in the Info Window that displays the content of the selected term.
+*   **Selection List:** The bottom pane in the Info Window that lists all the available terms.

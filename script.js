@@ -6,25 +6,25 @@ const gridContainer = document.getElementById('grid-container');
 const alphaContent = document.getElementById('alphaContent');
 const leafList = document.getElementById('leafList');
 
-const gridSize = 20;
+const gridSize = 30;
 const grid = [];
 const termLocations = {
-    'b1': [10, 8],
-    'b2': [6, 4],
-    'b3': [10, 4],
-    'b4': [14, 4],
-    'b5': [4, 12],
-    'b6': [8, 12],
-    'b7': [12, 12],
-    'b8': [16, 12],
-    'b9': [14, 16],
-    'b10': [18, 16],
-    'b11': [2, 16],
-    'b12': [10, 18],
-    'b13': [6, 2],
-    'b14': [10, 2],
-    'b15': [14, 2],
-    'b16': [18, 2]
+    'b1': [15, 13],
+    'b2': [9, 6],
+    'b3': [15, 6],
+    'b4': [21, 6],
+    'b5': [6, 18],
+    'b6': [12, 18],
+    'b7': [18, 18],
+    'b8': [24, 18],
+    'b9': [21, 24],
+    'b10': [27, 24],
+    'b11': [3, 24],
+    'b12': [15, 27],
+    'b13': [9, 3],
+    'b14': [15, 3],
+    'b15': [21, 3],
+    'b16': [27, 3]
 };
 
 for (let i = 0; i < gridSize * gridSize; i++) {

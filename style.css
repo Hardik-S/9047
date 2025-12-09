@@ -144,6 +144,15 @@ button:hover {
     color: #fff;
 }
 
+#grid-container {
+    position: relative;
+    width: 600px;
+    height: 600px;
+    display: grid;
+    grid-template-columns: repeat(30, 1fr);
+    grid-template-rows: repeat(30, 1fr);
+}
+
 .grid-cell.highlight {
     background-color: rgba(255, 255, 0, 0.3);
 }
