@@ -192,6 +192,13 @@ button:hover {
     position: relative;
 }
 
+#simplified-tree-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}
+
 .tree-node {
     position: absolute;
     background-color: #0d1b2e;

@@ -8,6 +8,7 @@ const gridContainer = document.getElementById('grid-container');
 const alphaContent = document.getElementById('alphaContent');
 const leafList = document.getElementById('leafList');
 const simplifiedTreeContainer = document.getElementById('simplified-tree-container');
+const simplifiedTreeSvg = document.getElementById('simplified-tree-svg');
 
 const gridSize = 30;
 const grid = [];
@@ -86,19 +87,35 @@ function populateLeafList() {
 
 function buildSimplifiedTree() {
     simplifiedTreeContainer.innerHTML = '';
+    simplifiedTreeSvg.innerHTML = '';
+
     const terms = [
-        { id: 'b1', top: '10%', left: '45%' },
-        { id: 'b2', top: '30%', left: '25%' },
-        { id: 'b3', top: '30%', left: '45%' },
-        { id: 'b4', top: '30%', left: '65%' },
+        { id: 'b1', top: '90%', left: '45%' },
+        { id: 'b2', top: '70%', left: '25%' },
+        { id: 'b3', top: '70%', left: '45%' },
+        { id: 'b4', top: '70%', left: '65%' },
         { id: 'b5', top: '50%', left: '15%' },
         { id: 'b6', top: '50%', left: '35%' },
         { id: 'b7', top: '50%', left: '55%' },
         { id: 'b8', top: '50%', left: '75%' },
-        { id: 'b9', top: '70%', left: '65%' },
-        { id: 'b10', top: '70%', left: '85%' },
-        { id: 'b11', top: '70%', left: '5%' },
-        { id: 'b12', top: '90%', left: '45%' }
+        { id: 'b9', top: '30%', left: '65%' },
+        { id: 'b10', top: '30%', left: '85%' },
+        { id: 'b11', top: '30%', left: '5%' },
+        { id: 'b12', top: '10%', left: '45%' }
+    ];
+
+    const connections = [
+        { from: 'b1', to: 'b2' },
+        { from: 'b1', to: 'b3' },
+        { from: 'b1', to: 'b4' },
+        { from: 'b2', to: 'b5' },
+        { from: 'b2', to: 'b6' },
+        { from: 'b4', to: 'b7' },
+        { from: 'b4', to: 'b8' },
+        { from: 'b8', to: 'b9' },
+        { from: 'b8', to: 'b10' },
+        { from: 'b3', to: 'b11' },
+        { from: 'b11', to: 'b12' }
     ];
 
     terms.forEach(term => {
@@ -110,6 +127,32 @@ function buildSimplifiedTree() {
             node.style.top = term.top;
             node.style.left = term.left;
             simplifiedTreeContainer.appendChild(node);
+            term.element = node;
+        }
+    });
+
+    connections.forEach(connection => {
+        const fromTerm = terms.find(t => t.id === connection.from);
+        const toTerm = terms.find(t => t.id === connection.to);
+
+        if (fromTerm && toTerm) {
+            const fromRect = fromTerm.element.getBoundingClientRect();
+            const toRect = toTerm.element.getBoundingClientRect();
+            const containerRect = simplifiedTreeContainer.getBoundingClientRect();
+
+            const x1 = fromRect.left + fromRect.width / 2 - containerRect.left;
+            const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
+            const x2 = toRect.left + toRect.width / 2 - containerRect.left;
+            const y2 = toRect.top + toRect.height / 2 - containerRect.top;
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2);
+            line.setAttribute('y2', y2);
+            line.setAttribute('stroke', '#ffd700');
+            line.setAttribute('stroke-width', '1');
+            simplifiedTreeSvg.appendChild(line);
         }
     });
 }
