@@ -1,4 +1,5 @@
 let contentDatabase = {};
+let currentlyHighlightedTerm = null;
 
 const canvas = document.getElementById('treeCanvas');
 const ctx = canvas.getContext('2d');
@@ -36,6 +37,7 @@ for (let i = 0; i < gridSize * gridSize; i++) {
 }
 
 function highlightTerm(termId) {
+    clearHighlights();
     const location = termLocations[termId];
     if (location) {
         const [row, col] = location;
@@ -52,7 +54,6 @@ function clearHighlights() {
 
 grid.forEach((cell, index) => {
     cell.addEventListener('mouseover', () => {
-        clearHighlights();
         const termId = Object.keys(termLocations).find(key => {
             const [row, col] = termLocations[key];
             return (index === row * gridSize + col) || (index === row * gridSize + col + 1);
@@ -60,13 +61,8 @@ grid.forEach((cell, index) => {
         if (termId) {
             highlightTerm(termId);
             alphaContent.textContent = contentDatabase[termId].content;
-        } else {
-            alphaContent.textContent = '';
+            currentlyHighlightedTerm = termId;
         }
-    });
-    cell.addEventListener('mouseout', () => {
-        clearHighlights();
-        alphaContent.textContent = '';
     });
 });
 
@@ -94,11 +90,10 @@ function populateLeafList() {
             li.textContent = `${data.english} | ${data.latin}`;
             li.style.paddingLeft = item.indent + 'px';
             li.addEventListener('mouseover', () => {
-                clearHighlights();
-                highlightTerm(item.id);
-            });
-            li.addEventListener('mouseout', () => {
-                clearHighlights();
+                if (currentlyHighlightedTerm !== item.id) {
+                    highlightTerm(item.id);
+                    currentlyHighlightedTerm = item.id;
+                }
             });
             leafList.appendChild(li);
         }
