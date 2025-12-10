@@ -190,6 +190,23 @@ const nodePositionOverrides = {
     b11: { topOffset: -4, leftOffset: 0 }
 };
 
+const simplifiedViewSpacing = {
+    centerX: 50,
+    centerY: 50,
+    spreadFactor: 1.12
+};
+
+const englishViewLayout = {
+    baseTargetLeft: 40,
+    rootId: 'b1',
+    accidentalBranches: {
+        b5: -8,
+        b6: 8
+    }
+};
+
+let cachedEnglishBaseShift = null;
+
 const clampPercentage = (value) => Math.max(0, Math.min(100, value));
 
 let simplifiedConnections = [...DEFAULT_SIMPLIFIED_CONNECTIONS];
@@ -283,8 +300,46 @@ function updateSimplifiedConnectionsFromText(connectionText) {
 function applyPositionOverrides(id, baseX, baseY) {
     const override = nodePositionOverrides[id] || {};
     return {
-        left: clampPercentage(baseX + (override.leftOffset || 0)),
-        top: clampPercentage(baseY + (override.topOffset || 0))
+        left: baseX + (override.leftOffset || 0),
+        top: baseY + (override.topOffset || 0)
+    };
+}
+
+function getEnglishBaseShift() {
+    if (cachedEnglishBaseShift !== null) {
+        return cachedEnglishBaseShift;
+    }
+    const baseId = englishViewLayout.rootId;
+    const baseLocation = termLocations[baseId];
+    if (!baseLocation) {
+        cachedEnglishBaseShift = 0;
+        return cachedEnglishBaseShift;
+    }
+    const [, baseCol] = baseLocation;
+    const defaultLeft = (baseCol / gridSize) * 100;
+    cachedEnglishBaseShift = englishViewLayout.baseTargetLeft - defaultLeft;
+    return cachedEnglishBaseShift;
+}
+
+function adjustPositionForView(viewKey, termId, position) {
+    let left = position.left;
+    let top = position.top;
+
+    if (viewKey === 'simplified') {
+        const { centerX, centerY, spreadFactor } = simplifiedViewSpacing;
+        left = centerX + (left - centerX) * spreadFactor;
+        top = centerY + (top - centerY) * spreadFactor;
+    } else if (viewKey === 'english') {
+        left += getEnglishBaseShift();
+        const branchOffset = englishViewLayout.accidentalBranches[termId];
+        if (typeof branchOffset === 'number') {
+            left += branchOffset;
+        }
+    }
+
+    return {
+        left: clampPercentage(left),
+        top: clampPercentage(top)
     };
 }
 
@@ -435,7 +490,8 @@ function buildTreeViewNodes(viewKey) {
             : term.data.latin;
         node.textContent = label || term.data.latin;
 
-        const { left, top } = applyPositionOverrides(term.id, term.x, term.y);
+        const basePosition = applyPositionOverrides(term.id, term.x, term.y);
+        const { left, top } = adjustPositionForView(viewKey, term.id, basePosition);
         node.style.left = `${left}%`;
         node.style.top = `${top}%`;
 
@@ -481,6 +537,7 @@ Promise.all([
 ]).then(([content, coords, connectionText]) => {
     contentDatabase = content;
     termLocations = coords;
+    cachedEnglishBaseShift = null;
     populateLeafList();
     updateSimplifiedConnectionsFromText(connectionText);
     buildAllTreeViews();

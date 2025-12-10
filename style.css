@@ -348,6 +348,11 @@ button:hover {
     z-index: 2;
 }
 
+#simplifiedNodesLayer .tree-node {
+    border-radius: 14px;
+    padding: 8px 14px;
+}
+
 .tree-node.sparkle {
     border-color: #ffd700;
     background: radial-gradient(circle at top, rgba(255, 215, 0, 0.3), #0d1b2e 60%);
