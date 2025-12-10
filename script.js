@@ -10,6 +10,8 @@ if (typeof document !== 'undefined' && document.body) {
 const canvas = document.getElementById('treeCanvas');
 const ctx = canvas.getContext('2d');
 const gridContainer = document.getElementById('grid-container');
+const highlightCanvas = document.getElementById('highlightCanvas');
+const highlightCtx = highlightCanvas ? highlightCanvas.getContext('2d') : null;
 const alphaContent = document.getElementById('alphaContent');
 const sectionAlphaTitle = document.getElementById('section-alpha-title');
 const leafList = document.getElementById('leafList');
@@ -65,6 +67,7 @@ const formatTermContent = (text) => {
 
 const gridSize = 30;
 const grid = [];
+let highlightCanvasSize = { width: 0, height: 0 };
 
 for (let i = 0; i < gridSize * gridSize; i++) {
     const cell = document.createElement('div');
@@ -72,6 +75,87 @@ for (let i = 0; i < gridSize * gridSize; i++) {
     cell.dataset.index = i;
     gridContainer.appendChild(cell);
     grid.push(cell);
+}
+
+function resizeHighlightCanvas() {
+    if (!highlightCanvas || !highlightCtx || !gridContainer) {
+        return;
+    }
+    const width = gridContainer.clientWidth;
+    const height = gridContainer.clientHeight;
+    if (!width || !height) {
+        return;
+    }
+    const dpr = window.devicePixelRatio || 1;
+    highlightCanvas.width = width * dpr;
+    highlightCanvas.height = height * dpr;
+    highlightCanvas.style.width = `${width}px`;
+    highlightCanvas.style.height = `${height}px`;
+    highlightCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    highlightCanvasSize = { width, height };
+    clearHighlightOverlay();
+    if (currentlyHighlightedTerm) {
+        drawHighlightOverlay(currentlyHighlightedTerm);
+    }
+}
+
+function clearHighlightOverlay() {
+    if (!highlightCtx || !highlightCanvas) {
+        return;
+    }
+    highlightCtx.clearRect(0, 0, highlightCanvasSize.width || highlightCanvas.width, highlightCanvasSize.height || highlightCanvas.height);
+    highlightCanvas.classList.remove('glow-active');
+}
+
+function drawHighlightOverlay(termId) {
+    if (!highlightCtx || !highlightCanvas || !gridContainer) {
+        return;
+    }
+    const location = termLocations[termId];
+    if (!location) {
+        return;
+    }
+    if (!highlightCanvasSize.width || !highlightCanvasSize.height) {
+        resizeHighlightCanvas();
+    }
+    const width = highlightCanvasSize.width;
+    const height = highlightCanvasSize.height;
+    if (!width || !height) {
+        return;
+    }
+    const cellWidth = width / gridSize;
+    const cellHeight = height / gridSize;
+    const [row, col] = location;
+    const startX = col * cellWidth;
+    const startY = row * cellHeight;
+    const highlightWidth = cellWidth * 2;
+    const highlightHeight = cellHeight;
+
+    clearHighlightOverlay();
+
+    highlightCtx.save();
+    highlightCtx.globalCompositeOperation = 'lighter';
+    highlightCtx.shadowColor = 'rgba(255, 215, 0, 0.75)';
+    highlightCtx.shadowBlur = Math.max(cellWidth, cellHeight) * 1.2;
+    highlightCtx.lineWidth = Math.max(cellWidth, cellHeight) * 0.25;
+    highlightCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+
+    const radius = Math.min(highlightWidth, highlightHeight) * 0.45;
+    highlightCtx.beginPath();
+    highlightCtx.moveTo(startX + radius, startY);
+    highlightCtx.lineTo(startX + highlightWidth - radius, startY);
+    highlightCtx.quadraticCurveTo(startX + highlightWidth, startY, startX + highlightWidth, startY + radius);
+    highlightCtx.lineTo(startX + highlightWidth, startY + highlightHeight - radius);
+    highlightCtx.quadraticCurveTo(startX + highlightWidth, startY + highlightHeight, startX + highlightWidth - radius, startY + highlightHeight);
+    highlightCtx.lineTo(startX + radius, startY + highlightHeight);
+    highlightCtx.quadraticCurveTo(startX, startY + highlightHeight, startX, startY + highlightHeight - radius);
+    highlightCtx.lineTo(startX, startY + radius);
+    highlightCtx.quadraticCurveTo(startX, startY, startX + radius, startY);
+    highlightCtx.closePath();
+    highlightCtx.stroke();
+
+    highlightCtx.restore();
+    highlightCanvas.classList.add('glow-active');
 }
 
 function highlightTerm(termId) {
@@ -83,11 +167,13 @@ function highlightTerm(termId) {
         const index2 = row * gridSize + col + 1;
         grid[index1].classList.add('highlight');
         grid[index2].classList.add('highlight');
+        drawHighlightOverlay(termId);
     }
 }
 
 function clearHighlights() {
     grid.forEach(cell => cell.classList.remove('highlight'));
+    clearHighlightOverlay();
 }
 
 grid.forEach((cell, index) => {
@@ -615,6 +701,10 @@ function updateView() {
     } else {
         clearTreeNodeHighlight('english');
     }
+
+    if (currentView === 0) {
+        resizeHighlightCanvas();
+    }
 }
 
 nextBtn.addEventListener('click', () => {
@@ -640,9 +730,11 @@ window.addEventListener('resize', () => {
             markConnectionsDirty(viewKey);
         }
     });
+    resizeHighlightCanvas();
 });
 
 updateView();
+resizeHighlightCanvas();
 
 const setZoomToggleState = (isOpen) => {
     if (!zoomToggleBtn) {
