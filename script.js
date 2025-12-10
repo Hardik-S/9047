@@ -285,16 +285,6 @@ const simplifiedViewSpacing = {
     anchorTargetX: 50
 };
 
-const englishViewLayout = {
-    baseTargetLeft: 38,
-    rootId: 'b1',
-    accidentalBranches: {
-        b5: -12,
-        b6: 12
-    }
-};
-
-let cachedEnglishBaseShift = null;
 let cachedSimplifiedLeftShift = null;
 
 const clampPercentage = (value) => Math.max(0, Math.min(100, value));
@@ -395,22 +385,6 @@ function applyPositionOverrides(id, baseX, baseY) {
     };
 }
 
-function getEnglishBaseShift() {
-    if (cachedEnglishBaseShift !== null) {
-        return cachedEnglishBaseShift;
-    }
-    const baseId = englishViewLayout.rootId;
-    const baseLocation = termLocations[baseId];
-    if (!baseLocation) {
-        cachedEnglishBaseShift = 0;
-        return cachedEnglishBaseShift;
-    }
-    const [, baseCol] = baseLocation;
-    const defaultLeft = (baseCol / gridSize) * 100;
-    cachedEnglishBaseShift = englishViewLayout.baseTargetLeft - defaultLeft;
-    return cachedEnglishBaseShift;
-}
-
 function getSimplifiedLeftShift() {
     if (cachedSimplifiedLeftShift !== null) {
         return cachedSimplifiedLeftShift;
@@ -433,17 +407,11 @@ function adjustPositionForView(viewKey, termId, position) {
     let left = position.left;
     let top = position.top;
 
-    if (viewKey === 'simplified') {
+    if (viewKey === 'simplified' || viewKey === 'english') {
         const { centerX, centerY, spreadFactor } = simplifiedViewSpacing;
         left = centerX + (left - centerX) * spreadFactor;
         left -= getSimplifiedLeftShift();
         top = centerY + (top - centerY) * spreadFactor;
-    } else if (viewKey === 'english') {
-        left += getEnglishBaseShift();
-        const branchOffset = englishViewLayout.accidentalBranches[termId];
-        if (typeof branchOffset === 'number') {
-            left += branchOffset;
-        }
     }
 
     return {
@@ -646,7 +614,6 @@ Promise.all([
 ]).then(([content, coords, connectionText]) => {
     contentDatabase = content;
     termLocations = coords;
-    cachedEnglishBaseShift = null;
     cachedSimplifiedLeftShift = null;
     populateLeafList();
     updateSimplifiedConnectionsFromText(connectionText);
