@@ -151,6 +151,23 @@ function populateLeafList() {
                     clearTreeNodeHighlight('english');
                 }
             });
+            li.addEventListener('click', () => {
+                const termData = contentDatabase[item.id];
+                if (!termData) {
+                    return;
+                }
+                alphaContent.innerHTML = formatTermContent(termData.content);
+                sectionAlphaTitle.textContent = `${termData.english} | ${termData.latin}`;
+                highlightTerm(item.id);
+                currentlyHighlightedTerm = item.id;
+                if (currentView === VIEW_KEY_TO_INDEX.simplified) {
+                    setTreeNodeHighlight('simplified', item.id);
+                } else if (currentView === VIEW_KEY_TO_INDEX.english) {
+                    setTreeNodeHighlight('english', item.id);
+                } else {
+                    clearAllTreeNodeHighlights();
+                }
+            });
             leafList.appendChild(li);
         }
     });
