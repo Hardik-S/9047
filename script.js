@@ -273,8 +273,8 @@ const DEFAULT_SIMPLIFIED_CONNECTIONS = [
 ];
 
 const nodePositionOverrides = {
-    b10: { topOffset: 16, leftOffset: 4 },
-    b11: { topOffset: -4, leftOffset: 0 }
+    b10: { topOffset: -12, leftOffset: 0 },
+    b11: { topOffset: 16, leftOffset: 4 }
 };
 
 const simplifiedViewSpacing = {
@@ -289,7 +289,7 @@ let cachedSimplifiedLeftShift = null;
 
 const clampPercentage = (value) => Math.max(0, Math.min(100, value));
 
-let simplifiedConnections = [...DEFAULT_SIMPLIFIED_CONNECTIONS];
+let treeConnections = [...DEFAULT_SIMPLIFIED_CONNECTIONS];
 
 const sanitizeName = (name) => {
     return name
@@ -370,9 +370,9 @@ function updateSimplifiedConnectionsFromText(connectionText) {
     const lookup = buildNodeLookup(contentDatabase);
     const parsed = parseConnectionText(connectionText, lookup);
     if (parsed.length) {
-        simplifiedConnections = parsed;
+        treeConnections = parsed;
     } else {
-        simplifiedConnections = [...DEFAULT_SIMPLIFIED_CONNECTIONS];
+        treeConnections = [...DEFAULT_SIMPLIFIED_CONNECTIONS];
     }
     markAllConnectionsDirty();
 }
@@ -526,7 +526,7 @@ function drawConnections(viewKey) {
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
 
-    simplifiedConnections.forEach(connection => {
+    treeConnections.forEach(connection => {
         const fromNode = view.nodeMap[connection.from];
         const toNode = view.nodeMap[connection.to];
         if (!fromNode || !toNode) {
