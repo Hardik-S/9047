@@ -280,19 +280,22 @@ const nodePositionOverrides = {
 const simplifiedViewSpacing = {
     centerX: 50,
     centerY: 50,
-    spreadFactor: 1.12
+    spreadFactor: 1.4,
+    anchorTermId: 'b4',
+    anchorTargetX: 50
 };
 
 const englishViewLayout = {
-    baseTargetLeft: 40,
+    baseTargetLeft: 38,
     rootId: 'b1',
     accidentalBranches: {
-        b5: -8,
-        b6: 8
+        b5: -12,
+        b6: 12
     }
 };
 
 let cachedEnglishBaseShift = null;
+let cachedSimplifiedLeftShift = null;
 
 const clampPercentage = (value) => Math.max(0, Math.min(100, value));
 
@@ -408,6 +411,24 @@ function getEnglishBaseShift() {
     return cachedEnglishBaseShift;
 }
 
+function getSimplifiedLeftShift() {
+    if (cachedSimplifiedLeftShift !== null) {
+        return cachedSimplifiedLeftShift;
+    }
+    const { anchorTermId, anchorTargetX, centerX, spreadFactor } = simplifiedViewSpacing;
+    if (!anchorTermId || !termLocations[anchorTermId]) {
+        cachedSimplifiedLeftShift = 0;
+        return cachedSimplifiedLeftShift;
+    }
+    const [row, col] = termLocations[anchorTermId];
+    const baseX = (col / gridSize) * 100;
+    const baseY = (row / gridSize) * 100;
+    const basePosition = applyPositionOverrides(anchorTermId, baseX, baseY);
+    const anchorLeft = centerX + (basePosition.left - centerX) * spreadFactor;
+    cachedSimplifiedLeftShift = anchorLeft - (typeof anchorTargetX === 'number' ? anchorTargetX : 50);
+    return cachedSimplifiedLeftShift;
+}
+
 function adjustPositionForView(viewKey, termId, position) {
     let left = position.left;
     let top = position.top;
@@ -415,6 +436,7 @@ function adjustPositionForView(viewKey, termId, position) {
     if (viewKey === 'simplified') {
         const { centerX, centerY, spreadFactor } = simplifiedViewSpacing;
         left = centerX + (left - centerX) * spreadFactor;
+        left -= getSimplifiedLeftShift();
         top = centerY + (top - centerY) * spreadFactor;
     } else if (viewKey === 'english') {
         left += getEnglishBaseShift();
@@ -625,6 +647,7 @@ Promise.all([
     contentDatabase = content;
     termLocations = coords;
     cachedEnglishBaseShift = null;
+    cachedSimplifiedLeftShift = null;
     populateLeafList();
     updateSimplifiedConnectionsFromText(connectionText);
     buildAllTreeViews();
