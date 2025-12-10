@@ -17,6 +17,7 @@ const sectionAlphaTitle = document.getElementById('section-alpha-title');
 const leafList = document.getElementById('leafList');
 const zoomToggleContainer = document.getElementById('zoomToggleContainer');
 const zoomToggleBtn = document.getElementById('zoomToggleBtn');
+const starfieldLayer = document.getElementById('starfield');
 const TREE_IMAGE_SRC = 'images/circle_crop_tree.png';
 
 const treeViewConfigs = {
@@ -137,7 +138,7 @@ function drawHighlightOverlay(termId) {
     highlightCtx.globalCompositeOperation = 'lighter';
     highlightCtx.shadowColor = 'rgba(255, 215, 0, 0.75)';
     highlightCtx.shadowBlur = Math.max(cellWidth, cellHeight) * 1.2;
-    highlightCtx.lineWidth = Math.max(cellWidth, cellHeight) * 0.25;
+    highlightCtx.lineWidth = Math.max(cellWidth, cellHeight) * 0.125;
     highlightCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
 
     const radius = Math.min(highlightWidth, highlightHeight) * 0.45;
@@ -704,6 +705,8 @@ function updateView() {
 
     if (currentView === 0) {
         resizeHighlightCanvas();
+    } else {
+        clearHighlightOverlay();
     }
 }
 
@@ -730,7 +733,9 @@ window.addEventListener('resize', () => {
             markConnectionsDirty(viewKey);
         }
     });
-    resizeHighlightCanvas();
+    if (currentView === 0) {
+        resizeHighlightCanvas();
+    }
 });
 
 updateView();
@@ -753,6 +758,8 @@ if (zoomToggleBtn && zoomModalController) {
         zoomModalController.toggle();
     });
 }
+
+setupStarfieldParallax();
 
 function setupTreeZoomModal(onStateChange) {
     const canvasElement = document.getElementById('treeCanvas');
@@ -873,6 +880,77 @@ function setupTreeZoomModal(onStateChange) {
         },
         isOpen() {
             return isModalOpen;
+        }
+    };
+}
+
+function setupStarfieldParallax() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return null;
+    }
+    if (!starfieldLayer) {
+        return null;
+    }
+    const hasFinePointer = typeof window.matchMedia !== 'function'
+        ? true
+        : window.matchMedia('(any-pointer: fine)').matches;
+    if (!hasFinePointer) {
+        starfieldLayer.style.transform = 'translate3d(0px, 0px, 0) scale(1.05)';
+        return null;
+    }
+
+    const horizontalRange = 30;
+    const verticalRange = 20;
+    const baseScale = 1.05;
+    let pending = false;
+    let translateX = 0;
+    let translateY = 0;
+
+    const applyTransform = () => {
+        pending = false;
+        starfieldLayer.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${baseScale})`;
+    };
+
+    const handleMove = (event) => {
+        const { innerWidth, innerHeight } = window;
+        if (!innerWidth || !innerHeight) {
+            return;
+        }
+        const xRatio = (event.clientX / innerWidth) - 0.5;
+        const yRatio = (event.clientY / innerHeight) - 0.5;
+        translateX = -xRatio * horizontalRange;
+        translateY = -yRatio * verticalRange;
+        if (!pending) {
+            pending = true;
+            requestAnimationFrame(applyTransform);
+        }
+    };
+
+    const reset = () => {
+        translateX = 0;
+        translateY = 0;
+        applyTransform();
+    };
+
+    const handleLeave = (event) => {
+        if (event.relatedTarget === null) {
+            reset();
+        }
+    };
+
+    const supportsPointer = typeof window.PointerEvent === 'function';
+    const moveEvent = supportsPointer ? 'pointermove' : 'mousemove';
+
+    window.addEventListener(moveEvent, handleMove, { passive: true });
+    document.addEventListener('mouseleave', handleLeave);
+    window.addEventListener('blur', reset);
+
+    return {
+        destroy() {
+            window.removeEventListener(moveEvent, handleMove);
+            document.removeEventListener('mouseleave', handleLeave);
+            window.removeEventListener('blur', reset);
+            reset();
         }
     };
 }

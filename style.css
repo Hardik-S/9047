@@ -15,8 +15,7 @@ body {
     overflow-y: auto;
 }
 
-body::before {
-    content: '';
+#starfield {
     position: fixed;
     top: 0;
     left: 0;
@@ -26,6 +25,10 @@ body::before {
     background-size: cover;
     opacity: 0.3;
     z-index: 0;
+    transform: translate3d(0px, 0px, 0) scale(1.05);
+    transform-origin: center;
+    will-change: transform;
+    pointer-events: none;
 }
 
 .container {
@@ -94,7 +97,6 @@ body::before {
 }
 
 #highlightCanvas.glow-active {
-    animation: sparklePulse 1.5s ease-in-out infinite;
 }
 
 .grid-cell {
@@ -103,8 +105,6 @@ body::before {
 
 .grid-cell.highlight {
     background-color: rgba(255, 255, 0, 0.3);
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.6), 0 0 22px rgba(255, 215, 0, 0.4);
-    animation: sparklePulse 1.5s ease-in-out infinite;
 }
 
 canvas {
@@ -400,7 +400,7 @@ button:hover {
   .container, .author-credit {
     display: none;
   }
-  body::before {
+  #starfield {
     display: none;
   }
   body::after {
