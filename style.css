@@ -280,6 +280,35 @@ button:hover {
     left: 10px;
     font-size: 0.8em;
     color: #fff;
+    overflow: hidden;
+}
+
+@keyframes authorShine {
+    0% {
+        left: -150%;
+    }
+    50% {
+        left: 150%;
+    }
+    100% {
+        left: -150%;
+    }
+}
+
+.author-credit::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 20%;
+    height: 100%;
+    background: linear-gradient(120deg, rgba(255, 215, 0, 0) 0%, rgba(255, 215, 0, 0.45) 50%, rgba(255, 215, 0, 0) 100%);
+    transform: skewX(-20deg);
+    pointer-events: none;
+}
+
+.author-credit:hover::after {
+    animation: authorShine 2.4s linear infinite;
 }
 
 .author-credit a {
