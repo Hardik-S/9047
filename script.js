@@ -2,6 +2,20 @@ let contentDatabase = {};
 let termLocations = {};
 let currentlyHighlightedTerm = null;
 
+const selectionOrder = [
+    'b1',  // Suppositio
+    'b5',  // Discreta
+    'b6',  // Communis
+    'b9',  // Naturalis
+    'b2',  // Accidentalis
+    'b3',  // Simplex
+    'b4',  // Personalis
+    'b7',  // Determinata
+    'b8',  // Confusa
+    'b10', // Mobilis et distributiva
+    'b11'  // Immobilis
+];
+
 const APP_VERSION = 'v1.0.9';
 if (typeof document !== 'undefined' && document.body) {
     document.body.dataset.appVersion = APP_VERSION;
@@ -19,6 +33,7 @@ const zoomToggleContainer = document.getElementById('zoomToggleContainer');
 const zoomToggleBtn = document.getElementById('zoomToggleBtn');
 const starfieldLayer = document.getElementById('starfield');
 const TREE_IMAGE_SRC = 'images/circle_crop_tree.png';
+let magnifierController = null;
 
 const treeViewConfigs = {
     simplified: {
@@ -205,10 +220,17 @@ treeImage.onload = function() {
 treeImage.src = TREE_IMAGE_SRC;
 
 // Populate selection list
+const getOrderedTermIds = () => {
+    const existingIds = new Set(Object.keys(contentDatabase));
+    const ordered = selectionOrder.filter(id => existingIds.has(id));
+    const remaining = [...existingIds].filter(id => !selectionOrder.includes(id));
+    return [...ordered, ...remaining];
+};
+
 function populateLeafList() {
     leafList.innerHTML = '';
     
-    const items = Object.keys(contentDatabase).map(key => ({ id: key, indent: 0 }));
+    const items = getOrderedTermIds().map(key => ({ id: key, indent: 0 }));
     
     items.forEach(item => {
         const data = contentDatabase[item.id];
@@ -663,8 +685,12 @@ function updateView() {
         backBtn.classList.add('hidden');
     }
 
+    const showMagnifierToggle = currentView === 0;
     if (zoomToggleContainer) {
-        zoomToggleContainer.classList.toggle('hidden', currentView !== 0);
+        zoomToggleContainer.classList.toggle('hidden', !showMagnifierToggle);
+    }
+    if (!showMagnifierToggle && magnifierController && magnifierController.isActive()) {
+        magnifierController.disable();
     }
 
     // Update next button
@@ -726,150 +752,149 @@ window.addEventListener('resize', () => {
     if (currentView === 0) {
         resizeHighlightCanvas();
     }
+    if (magnifierController && magnifierController.isActive()) {
+        magnifierController.refresh();
+    }
 });
 
-updateView();
-resizeHighlightCanvas();
-
-const setZoomToggleState = (isOpen) => {
+const setZoomToggleState = (isEnabled) => {
     if (!zoomToggleBtn) {
         return;
     }
-    zoomToggleBtn.textContent = isOpen ? 'Close Zoom View' : 'Open Zoom View';
-    zoomToggleBtn.setAttribute('aria-pressed', String(isOpen));
+    zoomToggleBtn.setAttribute('aria-pressed', String(isEnabled));
+    zoomToggleBtn.classList.toggle('active', Boolean(isEnabled));
 };
 
 setZoomToggleState(false);
 
-const zoomModalController = setupTreeZoomModal(setZoomToggleState);
+magnifierController = setupMagnifier(setZoomToggleState);
 
-if (zoomToggleBtn && zoomModalController) {
+if (zoomToggleBtn && magnifierController) {
     zoomToggleBtn.addEventListener('click', () => {
-        zoomModalController.toggle();
+        magnifierController.toggle();
     });
 }
 
 setupStarfieldParallax();
 
-function setupTreeZoomModal(onStateChange) {
+updateView();
+resizeHighlightCanvas();
+
+function setupMagnifier(onStateChange) {
     const canvasElement = document.getElementById('treeCanvas');
-    const modal = document.getElementById('imageModal');
-    const closeBtn = document.getElementById('modalCloseBtn');
-    const zoomView = document.getElementById('zoomView');
-    if (!canvasElement || !modal || !closeBtn || !zoomView) {
+    const lens = document.getElementById('magnifierLens');
+    const container = canvasElement ? canvasElement.parentElement : null;
+    if (!canvasElement || !lens || !container) {
         if (typeof onStateChange === 'function') {
             onStateChange(false);
         }
-        return;
+        return null;
     }
 
-    const magnification = 5;
-    let isPointerActive = false;
-    let isModalOpen = false;
+    const magnification = 10;
+    let lensDiameter = 20;
+    let isActive = false;
     let lastPosition = { x: 0.5, y: 0.5 };
-
-    const notifyStateChange = (state) => {
-        if (typeof onStateChange === 'function') {
-            onStateChange(state);
-        }
-    };
-
-    zoomView.style.backgroundSize = `${magnification * 100}% ${magnification * 100}%`;
-    zoomView.style.backgroundImage = `url('${TREE_IMAGE_SRC}')`;
 
     const clamp = (value) => Math.min(Math.max(value, 0), 1);
 
-    const updateZoomView = (relativeX, relativeY) => {
+    const updateLensDimensions = () => {
+        const rect = container.getBoundingClientRect();
+        if (!rect.width || !rect.height) {
+            return lensDiameter;
+        }
+        const limitingSize = Math.min(rect.width, rect.height);
+        lensDiameter = limitingSize * 0.25;
+        lens.style.width = `${lensDiameter}px`;
+        lens.style.height = `${lensDiameter}px`;
+        return lensDiameter;
+    };
+
+    const updateLens = (relativeX, relativeY) => {
         const clampedX = clamp(relativeX);
         const clampedY = clamp(relativeY);
-        zoomView.style.backgroundPosition = `${clampedX * 100}% ${clampedY * 100}%`;
         lastPosition = { x: clampedX, y: clampedY };
+        const containerRect = container.getBoundingClientRect();
+        const currentDiameter = lensDiameter || updateLensDimensions();
+        const offsetLeft = clampedX * containerRect.width - (currentDiameter / 2);
+        const offsetTop = clampedY * containerRect.height - (currentDiameter / 2);
+        lens.style.left = `${offsetLeft}px`;
+        lens.style.top = `${offsetTop}px`;
+        lens.style.backgroundPosition = `${clampedX * 100}% ${clampedY * 100}%`;
     };
 
-    const openModal = (relativeX = lastPosition.x, relativeY = lastPosition.y) => {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-        isModalOpen = true;
-        updateZoomView(relativeX, relativeY);
-        notifyStateChange(true);
-    };
-
-    const closeModal = () => {
-        if (modal.classList.contains('hidden')) {
-            return;
-        }
-        modal.classList.add('hidden');
-        document.body.style.overflow = '';
-        isPointerActive = false;
-        isModalOpen = false;
-        notifyStateChange(false);
-    };
-
-    const updatePositionFromEvent = (event) => {
-        const rect = zoomView.getBoundingClientRect();
+    const updateFromPointer = (event) => {
+        const rect = container.getBoundingClientRect();
         const relativeX = (event.clientX - rect.left) / rect.width;
         const relativeY = (event.clientY - rect.top) / rect.height;
-        updateZoomView(relativeX, relativeY);
+        updateLens(relativeX, relativeY);
     };
 
-    const handleCanvasClick = (event) => {
-        const rect = canvasElement.getBoundingClientRect();
-        const relativeX = (event.clientX - rect.left) / rect.width;
-        const relativeY = (event.clientY - rect.top) / rect.height;
-        openModal(relativeX, relativeY);
-    };
-
-    const handlePointerDown = (event) => {
-        isPointerActive = true;
-        updatePositionFromEvent(event);
-    };
-
-    const handlePointerMove = (event) => {
-        if (!isPointerActive) {
+    const showLensAtEvent = (event) => {
+        if (!isActive) {
             return;
         }
-        updatePositionFromEvent(event);
+        lens.style.display = 'block';
+        updateFromPointer(event);
     };
 
-    const handlePointerUp = () => {
-        isPointerActive = false;
+    const handlePointerLeave = () => {
+        lens.style.display = 'none';
     };
 
-    canvasElement.addEventListener('click', handleCanvasClick);
-    closeBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (event) => {
-        if (event.target === modal) {
-            closeModal();
+    const enable = () => {
+        if (isActive) {
+            return;
         }
-    });
-
-    zoomView.addEventListener('pointerdown', handlePointerDown);
-    zoomView.addEventListener('pointermove', handlePointerMove);
-    zoomView.addEventListener('pointerup', handlePointerUp);
-    zoomView.addEventListener('pointerleave', handlePointerUp);
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
-            closeModal();
+        isActive = true;
+        lens.style.display = 'none';
+        lens.style.backgroundImage = `url('${TREE_IMAGE_SRC}')`;
+        lens.style.backgroundSize = `${magnification * 100}% ${magnification * 100}%`;
+        updateLensDimensions();
+        updateLens(lastPosition.x, lastPosition.y);
+        container.classList.add('magnifier-active');
+        container.addEventListener('pointerenter', showLensAtEvent);
+        container.addEventListener('pointermove', showLensAtEvent);
+        container.addEventListener('pointerleave', handlePointerLeave);
+        if (typeof onStateChange === 'function') {
+            onStateChange(true);
         }
-    });
+    };
 
-    notifyStateChange(false);
+    const disable = () => {
+        if (!isActive) {
+            return;
+        }
+        isActive = false;
+        lens.style.display = 'none';
+        container.classList.remove('magnifier-active');
+        container.removeEventListener('pointerenter', showLensAtEvent);
+        container.removeEventListener('pointermove', showLensAtEvent);
+        container.removeEventListener('pointerleave', handlePointerLeave);
+        if (typeof onStateChange === 'function') {
+            onStateChange(false);
+        }
+    };
+
+    const toggle = () => {
+        if (isActive) {
+            disable();
+        } else {
+            enable();
+        }
+    };
 
     return {
-        openAt(relativeX = lastPosition.x, relativeY = lastPosition.y) {
-            openModal(relativeX, relativeY);
-        },
-        close: closeModal,
-        toggle() {
-            if (isModalOpen) {
-                closeModal();
-            } else {
-                openModal(lastPosition.x, lastPosition.y);
+        enable,
+        disable,
+        toggle,
+        isActive: () => isActive,
+        refresh() {
+            if (!container || !lens) {
+                return;
             }
-        },
-        isOpen() {
-            return isModalOpen;
+            updateLensDimensions();
+            updateLens(lastPosition.x, lastPosition.y);
         }
     };
 }

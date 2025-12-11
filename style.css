@@ -136,17 +136,6 @@ canvas {
     margin-left: auto;
 }
 
-.zoom-toggle-container {
-    display: flex;
-    justify-content: center;
-    margin-top: 5px;
-}
-
-.zoom-toggle {
-    min-width: 180px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
 
 button {
     background-color: #2d4a7c;
@@ -163,68 +152,84 @@ button:hover {
     background-color: #3d5a8c;
 }
 
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.85);
+.zoom-toggle-container {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    display: flex;
+}
+
+.zoom-toggle {
+    min-width: auto;
+    text-transform: none;
+    letter-spacing: normal;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 20;
-    padding: 20px;
-}
-
-.modal-content {
-    background-color: rgba(10, 14, 26, 0.95);
-    border: 2px solid #2d4a7c;
-    border-radius: 10px;
-    width: min(900px, 100%);
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 20px;
-}
-
-.modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: #ffd700;
-}
-
-#modalCloseBtn {
-    background: transparent;
+    font-size: 1.4rem;
+    background-color: transparent;
     border: none;
+    padding: 6px;
+    box-shadow: none;
     color: #ffd700;
-    font-size: 1.5rem;
     cursor: pointer;
-    padding: 0 5px;
 }
 
-#modalCloseBtn:hover {
-    color: #fff;
+.zoom-toggle:hover {
+    background-color: transparent;
 }
 
-.zoom-instructions {
-    color: #ccc;
-    font-size: 0.9rem;
+.zoom-toggle.active .magnifier-icon {
+    border-color: #ffe28a;
+    box-shadow: 0 0 12px rgba(255, 208, 115, 0.8), 0 0 25px rgba(255, 208, 115, 0.4);
 }
 
-.zoom-view {
-    flex: 1;
-    border: 1px solid #3d5a8c;
-    border-radius: 8px;
-    background-color: #000;
-    background-image: url('images/circle_crop_tree.png');
-    background-repeat: no-repeat;
-    background-size: 500%;
-    background-position: 50% 50%;
-    cursor: crosshair;
-    min-height: 300px;
+.magnifier-icon {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ffd700;
+    border-radius: 50%;
+    display: inline-block;
+    position: relative;
+}
+
+.magnifier-icon::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(255, 215, 0, 0) 0deg, rgba(255, 215, 0, 0.9) 120deg, rgba(255, 215, 0, 0) 360deg);
+    opacity: 0;
+    transform-origin: center;
+    mask: radial-gradient(circle, transparent calc(50% - 3px), #000 calc(50% - 2px), #000 calc(50% + 2px), transparent calc(50% + 3px));
+    -webkit-mask: radial-gradient(circle, transparent calc(50% - 3px), #000 calc(50% - 2px), #000 calc(50% + 2px), transparent calc(50% + 3px));
+}
+
+.zoom-toggle.active .magnifier-icon::before {
+    opacity: 1;
+    animation: magnifierOrbit 1.4s linear infinite;
+}
+
+.magnifier-icon::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 2px;
+    background-color: #ffd700;
+    bottom: -5px;
+    right: -4px;
+    transform: rotate(45deg);
+    transform-origin: center;
+    border-radius: 1px;
+}
+
+@keyframes magnifierOrbit {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .info {
@@ -362,6 +367,25 @@ button:hover {
     padding: 8px 14px;
     text-align: center;
     z-index: 2;
+}
+
+#magnifierLens {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid #ffd700;
+    pointer-events: none;
+    display: none;
+    background-color: rgba(7, 14, 30, 0.85);
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    z-index: 5;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+}
+
+.magnifier-active {
+    cursor: none;
 }
 
 .tree-node.sparkle {
