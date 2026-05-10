@@ -1,13 +1,33 @@
-<<<<<<< HEAD
-# 9047
-=======
-# 9047 - Tree Website
+# 9047 - Supposition Theory Tree
 
-A simple website to display a tree image.
+This repository contains a static, framework-free study site for exploring Peter of Spain's supposition theory. The app combines a tree image, a hoverable coordinate grid, simplified and English tree views, and explanatory term notes sourced from local JSON/text files.
 
-## View the Website
+## Project Layout
 
-To view the website, open the `index.html` file in your web browser.
+- `index.html` defines the single-page interface and view containers.
+- `style.css` controls the dark/gold visual system, tree panels, grid overlay, and responsive layout.
+- `script.js` loads content, renders the tree views, handles term highlighting, and manages the magnifier.
+- `content.json` stores the Latin/English term labels and explanatory notes.
+- `coords.json` maps term IDs to grid positions on the landing image.
+- `connections.txt` lists parent-child relationships for the rendered tree views.
+- `images/` contains the visual source assets used by the app.
 
-Alternatively, you can host this on GitHub Pages. Once you push the code to your GitHub repository, the website will be available at `https://<your-username>.github.io/9047/`.
->>>>>>> fb691d8 (Initial commit)
+## Local Preview
+
+The app can be opened directly from `index.html`, but a local static server more closely matches the fetch behavior used for `content.json`, `coords.json`, and `connections.txt`:
+
+```powershell
+python -m http.server 8000
+```
+
+Then visit `http://localhost:8000`.
+
+## Verification
+
+For script-only changes, run:
+
+```powershell
+node --check .\script.js
+```
+
+For data or content changes, also confirm the page loads from a local server and that hovering terms updates the information panel without console errors.
